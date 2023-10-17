@@ -1,3 +1,8 @@
 # Ignore the ff-mw.pkl file in the data directory since it's larger than 100.00 MB
 # might use Git LFS in the future to store this file
-data/ff-mw.pkl
+*/ff-mw.pkl
+
+data/external/*
+data/interim/*
+data/processed/*
+data/raw/*
