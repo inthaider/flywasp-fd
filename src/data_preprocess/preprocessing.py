@@ -1,3 +1,4 @@
+import hashlib
 import os
 import logging
 import pandas as pd
@@ -76,15 +77,42 @@ class DataPreprocessor:
             logging.error(f"Error loading data: {e}")
             raise
 
-    def save_processed_data(df: pd.DataFrame, input_data: str, timestamp: str = datetime.now().strftime("%Y%m%d_%H%M")) -> None:
-        # Save the processed data
-        processed_data_dir = Path(f"data/processed/{input_data}")
-        processed_data_dir.mkdir(parents=True, exist_ok=True)
-        processed_data_hash = df.to_string().encode('utf-8')
-        processed_data_path = processed_data_dir / \
-            f"{timestamp}_processed_data_{processed_data_hash}.pkl"
-        df.to_pickle(processed_data_path)
-        return processed_data_path
+    def save_processed_data(self, input_data: str, timestamp: str = datetime.now().strftime("%Y%m%d_%H%M")) -> str:
+        """
+        Saves the processed data to a pickled file.
+
+        Parameters
+        ----------
+        input_data : str
+            The name of the input data file.
+        timestamp : str, optional
+            The timestamp to use in the output file name.
+
+        Returns
+        -------
+        str
+            The path to the saved pickled file.
+        """
+        try:
+            # Create the directory for the processed data if it doesn't exist
+            processed_data_dir = Path(f"data/processed/{input_data}")
+            processed_data_dir.mkdir(parents=True, exist_ok=True)
+
+            # Generate a unique hash for the processed data
+            processed_data_hash = self.df.to_string().encode('utf-8')
+            processed_data_hash = hashlib.md5(processed_data_hash).hexdigest()
+
+            # Construct the output file path
+            processed_data_path = processed_data_dir / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
+
+            # Save the processed data to the output file
+            logging.info(f"Saving processed data to {processed_data_path}...")
+            self.df.to_pickle(processed_data_path)
+
+            return str(processed_data_path)
+        except Exception as e:
+            logging.error(f"Error saving processed data: {e}")
+            raise
 
     def drop_columns(self, columns_to_drop):
         """

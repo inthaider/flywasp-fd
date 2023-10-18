@@ -89,8 +89,7 @@ def main():
     logging.info("Saving processed data...")
     input_data = "ff-mw"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    processed_data_path = preprocessor.save_processed_data(
-        preprocessor.df, input_data, timestamp)
+    processed_data_path = preprocessor.save_processed_data(input_data, timestamp)
 
     # Prepare sequences and train-test splits
     logging.info("Preparing sequences and train-test splits...")
