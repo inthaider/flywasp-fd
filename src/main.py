@@ -10,7 +10,7 @@ from utils.utilities import prepare_train_test_sequences
 from utils.utilities import create_config_dict
 from utils.utilities import get_hash
 from models.rnn_model import train_rnn_model
-
+import hashlib
 
 def main():
     # Set up logging
@@ -130,8 +130,10 @@ def main():
     )
 
     # Get the hash values of the model and configuration
-    model_hash = get_hash(model.state_dict())
-    config_hash = get_hash(config)
+    # model_hash = get_hash(model.state_dict())
+    # config_hash = get_hash(config)
+    model_hash = hashlib.md5(str(model.state_dict()).encode('utf-8')).hexdigest()
+    config_hash = hashlib.md5(str(config).encode('utf-8')).hexdigest()
 
     # Check if the model and configuration already exist
     model_dir = Path(f"models/{model_name}")
