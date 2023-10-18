@@ -98,9 +98,11 @@ class DataPreprocessor:
             processed_data_dir = Path(f"data/processed/{input_data}")
             processed_data_dir.mkdir(parents=True, exist_ok=True)
 
-            # Generate a unique hash for the processed data
-            processed_data_hash = self.df.to_string().encode('utf-8')
-            processed_data_hash = hashlib.md5(processed_data_hash).hexdigest()
+            # Generate a hash based on DataFrame metadata and some sampling
+            logging.info("Generating hash for processed data...")
+            df_summary = f"{self.df.shape}{self.df.columns}{self.df.sample(n=10, random_state=1)}"
+            processed_data_hash = hashlib.md5(df_summary.encode()).hexdigest()
+            logging.info("Processed data hashed.")
 
             # Construct the output file path
             processed_data_path = processed_data_dir / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
@@ -113,6 +115,7 @@ class DataPreprocessor:
         except Exception as e:
             logging.error(f"Error saving processed data: {e}")
             raise
+
 
     def drop_columns(self, columns_to_drop):
         """
