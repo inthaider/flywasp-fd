@@ -12,7 +12,15 @@ from utils.utilities import get_hash
 from models.rnn_model import train_rnn_model
 import hashlib
 
+
 def main():
+    """
+    Main function that performs data preprocessing, feature engineering, model training, and model saving.
+
+    Returns
+    -------
+    None
+    """
     # Set up logging
     logging.basicConfig(level=logging.INFO)
 
@@ -24,10 +32,10 @@ def main():
 
     # Perform preprocessing steps
     logging.info("Performing preprocessing steps...")
-    preprocessor.drop_columns(["plot"])
-    preprocessor.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])
-    preprocessor.add_labels(["walk_backwards", "walk_backwards"], "start_walk")
-    preprocessor.handle_infinity_and_na()
+    preprocessor.drop_columns(["plot"])  # Drop the 'plot' column
+    preprocessor.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])  # Calculate the mean of 'ANTdis_1' and 'ANTdis_2' and store it in a new column 'ANTdis'
+    preprocessor.add_labels(["walk_backwards", "walk_backwards"], "start_walk")  # Add a new column 'start_walk' with value 'walk_backwards' for rows where the 'walk_backwards' column has value 'walk_backwards'
+    preprocessor.handle_infinity_and_na()  # Replace infinity and NaN values with appropriate values
     preprocessor.specific_rearrange(
         "F2Wdis_rate", "F2Wdis"
     )  # Rearrange the column names
@@ -56,7 +64,7 @@ def main():
             "file",
             "start_walk",
         ]
-    )
+    )  # Rearrange the columns in a specific order
 
     # Perform feature engineering steps
     logging.info("Performing feature engineering steps...")
@@ -83,13 +91,13 @@ def main():
             "ap_W_delta",
             "ant_W_delta",
         ]
-    )
+    )  # Standardize the selected features
 
     # Save the processed data
     logging.info("Saving processed data...")
     input_data = "ff-mw"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    processed_data_path = preprocessor.save_processed_data(input_data, timestamp)
+    processed_data_path = preprocessor.save_processed_data(input_data, timestamp)  # Save the processed data to a file
 
     # Prepare sequences and train-test splits
     logging.info("Preparing sequences and train-test splits...")
@@ -98,15 +106,16 @@ def main():
 
     # Train the RNN model
     logging.info("Training RNN model...")
-    input_size = X_train.shape[2] - 1
+    input_size = X_train.shape[2] - 1  # -1 because we drop the target column
     hidden_size = 64
     output_size = 2
     num_epochs = 10
     batch_size = 32
     learning_rate = 0.001
+    batch_first = True
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = train_rnn_model(X_train, Y_train, X_test, Y_test, input_size,
-                            hidden_size, output_size, num_epochs, batch_size, learning_rate, device)
+                            hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=batch_first)  # Train the RNN model
 
     # Create the model name
     model_architecture = "rnn"
@@ -127,11 +136,9 @@ def main():
         processed_data_path=processed_data_path,
         logging_level='DEBUG',
         logging_format='%(asctime)s - %(levelname)s - %(module)s - %(message)s'
-    )
+    )  # Create a dictionary with configuration settings
 
     # Get the hash values of the model and configuration
-    # model_hash = get_hash(model.state_dict())
-    # config_hash = get_hash(config)
     model_hash = hashlib.md5(str(model.state_dict()).encode('utf-8')).hexdigest()
     config_hash = hashlib.md5(str(config).encode('utf-8')).hexdigest()
 

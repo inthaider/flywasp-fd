@@ -1,10 +1,10 @@
 import hashlib
-import os
 import logging
-import pandas as pd
-import numpy as np
 from datetime import datetime
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 
 class DataPreprocessor:
@@ -29,6 +29,8 @@ class DataPreprocessor:
     -------
     load_data()
         Loads the DataFrame from a pickled file.
+    save_processed_data(input_data, timestamp)
+        Saves the processed data to a pickled file.
     drop_columns(columns_to_drop)
         Drops the specified columns from the DataFrame.
     specific_rearrange(col_to_move, ref_col)
@@ -115,7 +117,6 @@ class DataPreprocessor:
         except Exception as e:
             logging.error(f"Error saving processed data: {e}")
             raise
-
 
     def drop_columns(self, columns_to_drop):
         """
