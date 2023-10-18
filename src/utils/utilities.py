@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import hashlib
 
+
 def get_hash(obj):
     """
     Returns the hash value of an object as a string.
@@ -106,11 +107,13 @@ def prepare_train_test_sequences(df, sequence_length=3, split_ratio=2/3):
             X_test.extend(x[train_size:])
             Y_test.extend(y[train_size:])
 
-        logging.info(f"Prepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
+        logging.info(
+            f"Prepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
         return np.array(X_train), np.array(Y_train), np.array(X_test), np.array(Y_test)
     except Exception as e:
         logging.error(f"Error preparing training and testing sequences: {e}")
         raise
+
 
 def create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path=None, interim_data_path=None, processed_data_path=None, logging_level='INFO', logging_format='%(asctime)s - %(levelname)s - %(message)s'):
     config = {
@@ -132,14 +135,14 @@ def create_config_dict(model_name, input_size, hidden_size, output_size, num_epo
     }
     config['data'] = {}
     config['data'] = {
-            'raw_data_path': raw_data_path,
-            'interim_data_path': interim_data_path,
-            'processed_data_path': processed_data_path
+        'raw_data_path': raw_data_path,
+        'interim_data_path': interim_data_path,
+        'processed_data_path': processed_data_path
     }
     return config
 
 ###
-### Will use the function below if/when we have appropriate raw, processed, and interim data
+# Will use the function below if/when we have appropriate raw, processed, and interim data
 ###
 # def create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path=None, processed_data_path=None, interim_data_path=None, logging_level='INFO', logging_format='%(asctime)s - %(levelname)s - %(message)s'):
 #     config = {

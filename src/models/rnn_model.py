@@ -4,6 +4,8 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
 # Define the RNN model
+
+
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(RNN, self).__init__()
@@ -20,6 +22,8 @@ class RNN(nn.Module):
         return out
 
 # Define the dataset class
+
+
 class WalkDataset(Dataset):
     def __init__(self, X, Y):
         self.X = torch.from_numpy(X).float()
@@ -31,15 +35,19 @@ class WalkDataset(Dataset):
     def __getitem__(self, idx):
         return self.X[idx], self.Y[idx]
 
+
 def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device):
     # Create the dataset and data loader
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(
+        test_dataset, batch_size=batch_size, shuffle=False)
 
     # Define the model, loss function, and optimizer
-    model = RNN(input_size=input_size, hidden_size=hidden_size, output_size=output_size).to(device)
+    model = RNN(input_size=input_size, hidden_size=hidden_size,
+                output_size=output_size).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
@@ -73,6 +81,7 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         test_loss = running_loss / len(test_loader)
         test_acc = correct / total
 
-        print(f'Epoch {epoch+1}/{num_epochs}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
+        print(
+            f'Epoch {epoch+1}/{num_epochs}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
 
     return model

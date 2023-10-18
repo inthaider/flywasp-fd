@@ -51,13 +51,16 @@ class FeatureEngineer:
         if not isinstance(columns_to_scale, list):
             raise TypeError("columns_to_scale must be a list.")
         if not all(isinstance(col, str) for col in columns_to_scale):
-            raise TypeError("All elements of columns_to_scale must be strings.")
+            raise TypeError(
+                "All elements of columns_to_scale must be strings.")
         if not all(col in self.df.columns for col in columns_to_scale):
-            raise ValueError("All elements of columns_to_scale must be columns in the DataFrame.")
+            raise ValueError(
+                "All elements of columns_to_scale must be columns in the DataFrame.")
         try:
             logging.info("Standardizing features...")
             self.df[columns_to_scale] = self.scaler.fit_transform(
                 self.df[columns_to_scale])
         except Exception as e:
-            logging.error(f"An error occurred while standardizing features: {e}")
+            logging.error(
+                f"An error occurred while standardizing features: {e}")
             raise e

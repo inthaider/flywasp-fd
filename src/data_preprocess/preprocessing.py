@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime
 from pathlib import Path
 
+
 class DataPreprocessor:
     """
     A class for preprocessing a Pandas DataFrame.
@@ -74,14 +75,14 @@ class DataPreprocessor:
         except Exception as e:
             logging.error(f"Error loading data: {e}")
             raise
-        
 
     def save_processed_data(df: pd.DataFrame, input_data: str, timestamp: str = datetime.now().strftime("%Y%m%d_%H%M")) -> None:
         # Save the processed data
         processed_data_dir = Path(f"data/processed/{input_data}")
         processed_data_dir.mkdir(parents=True, exist_ok=True)
         processed_data_hash = df.to_string().encode('utf-8')
-        processed_data_path = processed_data_dir / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
+        processed_data_path = processed_data_dir / \
+            f"{timestamp}_processed_data_{processed_data_hash}.pkl"
         df.to_pickle(processed_data_path)
         return processed_data_path
 
@@ -113,9 +114,11 @@ class DataPreprocessor:
             The name of the reference column.
         """
         try:
-            logging.info(f"Moving column {col_to_move} to be immediately after {ref_col}...")
+            logging.info(
+                f"Moving column {col_to_move} to be immediately after {ref_col}...")
             cols = self.df.columns.tolist()
-            cols.insert(cols.index(ref_col) + 1, cols.pop(cols.index(col_to_move)))
+            cols.insert(cols.index(ref_col) + 1,
+                        cols.pop(cols.index(col_to_move)))
             self.df = self.df[cols]
         except Exception as e:
             logging.error(f"Error moving column: {e}")
@@ -150,7 +153,8 @@ class DataPreprocessor:
         """
         try:
             for pair, new_col in zip(column_pairs, new_columns):
-                logging.info(f"Calculating mean of columns {pair} and adding as {new_col}...")
+                logging.info(
+                    f"Calculating mean of columns {pair} and adding as {new_col}...")
                 self.df[new_col] = self.df[pair].mean(axis=1)
         except Exception as e:
             logging.error(f"Error calculating means: {e}")
@@ -168,7 +172,8 @@ class DataPreprocessor:
             The name of the new column to add.
         """
         try:
-            logging.info(f"Adding new column {new_column} based on conditions of columns {condition_columns}...")
+            logging.info(
+                f"Adding new column {new_column} based on conditions of columns {condition_columns}...")
             self.df[new_column] = ((self.df[condition_columns[0]] == 1) & (
                 self.df[condition_columns[1]].shift(1) == 0)).astype(int)
         except Exception as e:
