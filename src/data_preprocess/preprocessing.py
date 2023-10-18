@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 import numpy as np
 from datetime import datetime
-
+from pathlib import Path
 
 class DataPreprocessor:
     """
@@ -75,38 +75,14 @@ class DataPreprocessor:
             logging.error(f"Error loading data: {e}")
             raise
         
-    def save_processed_data(self):
-        """
-        Saves the processed DataFrame to a pickled file in the 'data/processed/' directory.
-        The file name includes a timestamp and a version number based on existing files in the directory.
 
-        Returns
-        -------
-        str
-            The path to the saved processed data file.
-        """
-        try:
-            # Create the 'data/processed/' directory if it doesn't exist
-            os.makedirs("data/processed/", exist_ok=True)
-
-            # Generate the file name based on existing files in the directory
-            existing_files = os.listdir("data/processed/")
-            version = len(existing_files) + 1
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            file_name = f"processed_data_v{version}_{timestamp}.pkl"
-
-            # Save the processed DataFrame to the file
-            file_path = os.path.join("data/processed/", file_name)
-            self.df.to_pickle(file_path)
-
-            # Print a message to confirm that the file was saved
-            print(f"Processed data saved to {file_path}")
-
-            # Return the path to the saved file
-            return file_path
-        except Exception as e:
-            logging.error(f"Error saving processed data: {e}")
-            raise
+    def save_processed_data(df: pd.DataFrame, input_data: str, timestamp: str) -> None:
+        # Save the processed data
+        processed_data_dir = Path(f"data/processed/{input_data}")
+        processed_data_dir.mkdir(parents=True, exist_ok=True)
+        processed_data_hash = df.to_string().encode('utf-8')
+        processed_data_path = processed_data_dir / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
+        df.to_pickle(processed_data_path)
 
     def drop_columns(self, columns_to_drop):
         """

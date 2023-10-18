@@ -1,6 +1,23 @@
 import logging
 import numpy as np
 import pandas as pd
+import hashlib
+
+def get_hash(obj):
+    """
+    Returns the hash value of an object as a string.
+
+    Parameters
+    ----------
+    obj : object
+        The object to hash.
+
+    Returns
+    -------
+    str
+        The hash value of the object as a string.
+    """
+    return hashlib.sha256(str(obj).encode()).hexdigest()
 
 
 def create_sequences(data, sequence_length=3):
