@@ -1,9 +1,10 @@
 import logging
 import numpy as np
+import torch
 from data_preprocess.preprocessing import DataPreprocessor
 from data_preprocess.feature_engineering import FeatureEngineer
 from utils.utilities import prepare_train_test_sequences
-
+from models.rnn_model import train_rnn_model
 
 def main():
     # Set up logging
@@ -83,8 +84,16 @@ def main():
     X_train, Y_train, X_test, Y_test = prepare_train_test_sequences(
         feature_engineer.df)
 
-    # TODO: Model building and evaluation code here
-
+    # Train the RNN model
+    logging.info("Training RNN model...")
+    input_size = X_train.shape[2] - 1
+    hidden_size = 64
+    output_size = 2
+    num_epochs = 10
+    batch_size = 32
+    learning_rate = 0.001
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device)
 
 if __name__ == "__main__":
     main()
