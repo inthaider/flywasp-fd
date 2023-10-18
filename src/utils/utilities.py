@@ -1,32 +1,96 @@
+import logging
 import numpy as np
+import pandas as pd
 
 
 def create_sequences(data, sequence_length=3):
-    x, y = [], []
-    for i in range(len(data) - sequence_length):
-        x.append(data.iloc[i:i+sequence_length].values)
-        y.append(data.iloc[i+sequence_length]['start_walk'])
-    return np.array(x), np.array(y)
+    """
+    Creates sequences of length sequence_length from the input data.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The input data to create sequences from.
+    sequence_length : int, optional
+        The length of the sequences to create.
+
+    Returns
+    -------
+    numpy.ndarray
+        The input data as sequences of length sequence_length.
+    numpy.ndarray
+        The target values for the sequences.
+    """
+    try:
+        logging.info(f"Creating sequences of length {sequence_length}...")
+        x, y = [], []
+        for i in range(len(data) - sequence_length):
+            x.append(data.iloc[i:i+sequence_length].values)
+            y.append(data.iloc[i+sequence_length]['start_walk'])
+        logging.info(f"Created {len(x)} sequences.")
+        return np.array(x), np.array(y)
+    except Exception as e:
+        logging.error(f"Error creating sequences: {e}")
+        raise
 
 
 def prepare_train_test_sequences(df, sequence_length=3, split_ratio=2/3):
-    X_train, Y_train = [], []
-    X_test, Y_test = [], []
-    files = df['file'].unique()
+    """
+    Prepares training and testing sequences from the input DataFrame.
 
-    for file in files:
-        file_data = df[df['file'] == file].drop(['Frame', 'file'], axis=1)
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The input DataFrame to prepare sequences from.
+    sequence_length : int, optional
+        The length of the sequences to create.
+    split_ratio : float, optional
+        The ratio of training to testing data.
 
-        # Create sequences for each file
-        x, y = create_sequences(file_data, sequence_length=sequence_length)
+    Returns
+    -------
+    numpy.ndarray
+        The training input sequences.
+    numpy.ndarray
+        The training target values.
+    numpy.ndarray
+        The testing input sequences.
+    numpy.ndarray
+        The testing target values.
+    """
+    try:
+        logging.info("Preparing training and testing sequences...")
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError("df must be a pandas DataFrame.")
+        if not isinstance(sequence_length, int):
+            raise TypeError("sequence_length must be an integer.")
+        if not isinstance(split_ratio, float):
+            raise TypeError("split_ratio must be a float.")
+        if not (0 < split_ratio < 1):
+            raise ValueError("split_ratio must be between 0 and 1.")
 
-        # Calculate the split index
-        train_size = int(len(x) * split_ratio)
+        X_train, Y_train = [], []
+        X_test, Y_test = [], []
+        files = df['file'].unique()
 
-        # Split the sequences for each file
-        X_train.extend(x[:train_size])
-        Y_train.extend(y[:train_size])
-        X_test.extend(x[train_size:])
-        Y_test.extend(y[train_size:])
+        for file in files:
+            logging.info(f"Processing file {file}...")
+            file_data = df[df['file'] == file].drop(['Frame', 'file'], axis=1)
 
-    return np.array(X_train), np.array(Y_train), np.array(X_test), np.array(Y_test)
+            # Create sequences for each file
+            x, y = create_sequences(file_data, sequence_length=sequence_length)
+
+            # Calculate the split index
+            train_size = int(len(x) * split_ratio)
+
+            # Split the sequences for each file
+            X_train.extend(x[:train_size])
+            Y_train.extend(y[:train_size])
+            X_test.extend(x[train_size:])
+            Y_test.extend(y[train_size:])
+
+        logging.info(f"Prepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
+        return np.array(X_train), np.array(Y_train), np.array(X_test), np.array(Y_test)
+    except Exception as e:
+        logging.error(f"Error preparing training and testing sequences: {e}")
+        raise

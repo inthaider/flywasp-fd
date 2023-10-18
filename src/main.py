@@ -1,15 +1,22 @@
+import logging
+import numpy as np
 from data_preprocess.preprocessing import DataPreprocessor
 from data_preprocess.feature_engineering import FeatureEngineer
 from utils.utilities import prepare_train_test_sequences
 
 
 def main():
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+
     # Initialize preprocessing object and load data
     pickle_path = "data/interim/ff-mw.pkl"
     preprocessor = DataPreprocessor(pickle_path=pickle_path)
+    logging.info("Loading data...")
     df = preprocessor.load_data()
 
     # Perform preprocessing steps
+    logging.info("Performing preprocessing steps...")
     preprocessor.drop_columns(["plot"])
     preprocessor.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])
     preprocessor.add_labels(["walk_backwards", "walk_backwards"], "start_walk")
@@ -17,8 +24,6 @@ def main():
     preprocessor.specific_rearrange(
         "F2Wdis_rate", "F2Wdis"
     )  # Rearrange the column names
-
-    # Only keeping in the relevant variables
     preprocessor.rearrange_columns(
         [
             "Frame",
@@ -47,6 +52,7 @@ def main():
     )
 
     # Perform feature engineering steps
+    logging.info("Performing feature engineering steps...")
     feature_engineer = FeatureEngineer(df=preprocessor.df)
     feature_engineer.standardize_features(
         [
@@ -73,6 +79,7 @@ def main():
     )
 
     # Prepare sequences and train-test splits
+    logging.info("Preparing sequences and train-test splits...")
     X_train, Y_train, X_test, Y_test = prepare_train_test_sequences(
         feature_engineer.df)
 
