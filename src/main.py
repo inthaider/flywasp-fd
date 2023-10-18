@@ -1,9 +1,13 @@
 import logging
 import numpy as np
 import torch
+import yaml
+from datetime import datetime
+from pathlib import Path
 from data_preprocess.preprocessing import DataPreprocessor
 from data_preprocess.feature_engineering import FeatureEngineer
 from utils.utilities import prepare_train_test_sequences
+from utils.utilities import create_config_dict
 from models.rnn_model import train_rnn_model
 
 def main():
@@ -79,6 +83,10 @@ def main():
         ]
     )
 
+    # Save the processed data
+    logging.info("Saving processed data...")
+    processed_data_path = preprocessor.save_processed_data()
+
     # Prepare sequences and train-test splits
     logging.info("Preparing sequences and train-test splits...")
     X_train, Y_train, X_test, Y_test = prepare_train_test_sequences(
@@ -94,6 +102,35 @@ def main():
     learning_rate = 0.001
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device)
+
+    # Save the trained model
+    model_dir = Path("models/")
+    model_dir.mkdir(parents=True, exist_ok=True)
+    model_path = model_dir / "rnn_model.pt"
+    torch.save(model.state_dict(), model_path)
+
+    # Create the configuration dictionary
+    config = create_config_dict(
+        model_name='preliminary_rnn_model',
+        input_size=input_size,
+        hidden_size=hidden_size,
+        output_size=output_size,
+        num_epochs=num_epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        raw_data_path=None,
+        interim_data_path=pickle_path,
+        processed_data_path=processed_data_path,
+        logging_level='DEBUG',
+        logging_format='%(asctime)s - %(levelname)s - %(module)s - %(message)s'
+    )
+    # Save the configuration settings
+    config_dir = Path("config/")
+    config_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    config_path = config_dir / f"config_v{timestamp}.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
 
 if __name__ == "__main__":
     main()

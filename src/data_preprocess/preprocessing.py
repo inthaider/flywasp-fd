@@ -1,6 +1,8 @@
+import os
 import logging
 import pandas as pd
 import numpy as np
+from datetime import datetime
 
 
 class DataPreprocessor:
@@ -71,6 +73,39 @@ class DataPreprocessor:
                 raise ValueError("Provide a valid pickle path.")
         except Exception as e:
             logging.error(f"Error loading data: {e}")
+            raise
+        
+    def save_processed_data(self):
+        """
+        Saves the processed DataFrame to a pickled file in the 'data/processed/' directory.
+        The file name includes a timestamp and a version number based on existing files in the directory.
+
+        Returns
+        -------
+        str
+            The path to the saved processed data file.
+        """
+        try:
+            # Create the 'data/processed/' directory if it doesn't exist
+            os.makedirs("data/processed/", exist_ok=True)
+
+            # Generate the file name based on existing files in the directory
+            existing_files = os.listdir("data/processed/")
+            version = len(existing_files) + 1
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_name = f"processed_data_v{version}_{timestamp}.pkl"
+
+            # Save the processed DataFrame to the file
+            file_path = os.path.join("data/processed/", file_name)
+            self.df.to_pickle(file_path)
+
+            # Print a message to confirm that the file was saved
+            print(f"Processed data saved to {file_path}")
+
+            # Return the path to the saved file
+            return file_path
+        except Exception as e:
+            logging.error(f"Error saving processed data: {e}")
             raise
 
     def drop_columns(self, columns_to_drop):

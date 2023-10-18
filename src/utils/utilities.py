@@ -94,3 +94,64 @@ def prepare_train_test_sequences(df, sequence_length=3, split_ratio=2/3):
     except Exception as e:
         logging.error(f"Error preparing training and testing sequences: {e}")
         raise
+
+def create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path=None, interim_data_path=None, processed_data_path=None, logging_level='INFO', logging_format='%(asctime)s - %(levelname)s - %(message)s'):
+    config = {
+        'model_name': model_name,
+        'model': {
+            'rnn': {
+                'input_size': input_size,
+                'hidden_size': hidden_size,
+                'output_size': output_size,
+                'num_epochs': num_epochs,
+                'batch_size': batch_size,
+                'learning_rate': learning_rate
+            }
+        },
+        'logging': {
+            'level': logging_level,
+            'format': logging_format
+        }
+    }
+    config['data'] = {}
+    config['data'] = {
+            'raw_data_path': raw_data_path,
+            'interim_data_path': interim_data_path,
+            'processed_data_path': processed_data_path
+    }
+    return config
+
+###
+### Will use the function below if/when we have appropriate raw, processed, and interim data
+###
+# def create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path=None, processed_data_path=None, interim_data_path=None, logging_level='INFO', logging_format='%(asctime)s - %(levelname)s - %(message)s'):
+#     config = {
+#         'model_name': model_name,
+#         'model': {
+#             'rnn': {
+#                 'input_size': input_size,
+#                 'hidden_size': hidden_size,
+#                 'output_size': output_size,
+#                 'num_epochs': num_epochs,
+#                 'batch_size': batch_size,
+#                 'learning_rate': learning_rate
+#             }
+#         },
+#         'logging': {
+#             'level': logging_level,
+#             'format': logging_format
+#         }
+#     }
+#     if raw_data_path:
+#         config['data'] = {
+#             'raw_data_path': raw_data_path
+#         }
+#     if processed_data_path:
+#         if 'data' not in config:
+#             config['data'] = {}
+#         config['data']['processed_data_path'] = processed_data_path
+#     if interim_data_path:
+#         if 'data' not in config:
+#             config['data'] = {}
+#         config['data']['interim_data_path'] = interim_data_path
+#     return config
