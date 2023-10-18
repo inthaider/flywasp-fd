@@ -76,13 +76,14 @@ class DataPreprocessor:
             raise
         
 
-    def save_processed_data(df: pd.DataFrame, input_data: str, timestamp: str) -> None:
+    def save_processed_data(df: pd.DataFrame, input_data: str, timestamp: str = datetime.now().strftime("%Y%m%d_%H%M")) -> None:
         # Save the processed data
         processed_data_dir = Path(f"data/processed/{input_data}")
         processed_data_dir.mkdir(parents=True, exist_ok=True)
         processed_data_hash = df.to_string().encode('utf-8')
         processed_data_path = processed_data_dir / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
         df.to_pickle(processed_data_path)
+        return processed_data_path
 
     def drop_columns(self, columns_to_drop):
         """

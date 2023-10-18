@@ -87,11 +87,8 @@ def main():
     # Save the processed data
     logging.info("Saving processed data...")
     input_data = "ff-mw"
-    processed_data_dir = Path(f"data/processed/{input_data}")
-    processed_data_dir.mkdir(parents=True, exist_ok=True)
-    processed_data_hash = get_hash(preprocessor.df)
-    processed_data_path = processed_data_dir / f"{timestamp}_processed_data_{processed_data_hash}_.pkl"
-    preprocessor.df.to_pickle(processed_data_path)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    processed_data_path = preprocessor.save_processed_data(preprocessor.df, input_data, timestamp)
 
     # Prepare sequences and train-test splits
     logging.info("Preparing sequences and train-test splits...")
@@ -115,7 +112,6 @@ def main():
     model_name = f"{model_architecture}_{input_data}_v{version_number}"
     
     # Create the configuration dictionary
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
     config = create_config_dict(
         model_name=f"{timestamp}_{model_name}",
         input_size=input_size,
