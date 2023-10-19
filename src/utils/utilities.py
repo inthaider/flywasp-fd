@@ -65,7 +65,10 @@ def prepare_train_test_sequences(df, sequence_length=3, split_ratio=2/3):
 
     train_idx, test_idx = 0, 0
 
+    i=0
     for file in unique_files:
+        logging.info(f"===================")
+        logging.info(f"Fly-wasp pair # {i}")
         logging.info(f"Processing file {file}...")
         file_data = df[df['file'] == file].drop(['Frame', 'file'], axis=1).values
 
@@ -85,6 +88,8 @@ def prepare_train_test_sequences(df, sequence_length=3, split_ratio=2/3):
         # Update the indices for the next iteration
         train_idx += file_train_size
         test_idx += n - file_train_size
+
+        i = i+1
 
     logging.info(f"Prepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
     return X_train, Y_train, X_test, Y_test
