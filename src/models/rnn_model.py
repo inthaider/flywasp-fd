@@ -75,9 +75,9 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         # print_interval = num_batches // prints_per_epoch
         print_interval = int(max(num_batches // prints_per_epoch, 1))
 
-        #--------------------#
+        # --------------------#
         print(f"Print interval: {print_interval}")  # Debugging line
-        #--------------------#
+        # --------------------#
 
         # Set the model to training mode - important for batch normalization and dropout layers
         # This is best practice, but is it necessary here in this situation?
