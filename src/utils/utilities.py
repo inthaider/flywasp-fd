@@ -11,7 +11,7 @@ import numpy as np
 import logging
 
 
-def handle_infinity_and_na_numpy(*arrays, replace_with_zero=False):
+def handle_infinity_and_na_numpy(*arrays, replace_with_zero=True):
     """
     Replaces infinite and NaN values in multiple NumPy arrays with either zeros or forward/backward filled values.
     This function modifies the input arrays in-place.
