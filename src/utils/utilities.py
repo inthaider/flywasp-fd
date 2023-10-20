@@ -7,20 +7,23 @@ import numpy as np
 import pandas as pd
 
 
-def handle_infinity_and_na_numpy(*arrays):
-    """
-    Replaces infinite and NaN values in multiple NumPy arrays of RNN input X (not Y!) with forward/backward filled values.
-    This function modifies the RNN input X arrays in-place.
+import numpy as np
+import logging
 
-    If a feature in a given batch (i.e., a specific sample or observation) and time step is NaN,
-    the function will look for the nearest non-NaN value in the same feature but different time step 
-    within the same batch. If all time steps for that feature in that batch are NaN, the function 
-    will look for the nearest non-NaN value in the same feature and time step but in a different batch.
+
+def handle_infinity_and_na_numpy(*arrays, replace_with_zero=False):
+    """
+    Replaces infinite and NaN values in multiple NumPy arrays with either zeros or forward/backward filled values.
+    This function modifies the input arrays in-place.
+
+    If a feature in a given batch (i.e., a specific sample or observation) and time step is NaN, the function will look for the nearest non-NaN value in the same feature but different time step within the same batch. If all time steps for that feature in that batch are NaN, the function will look for the nearest non-NaN value in the same feature and time step but in a different batch.
 
     Parameters
     ----------
     *arrays : array_like
         One or more NumPy arrays to be processed.
+    replace_with_zero : bool, optional
+        If True, replaces NaN values with zeros. Default is False.
 
     Raises
     ------
@@ -60,18 +63,24 @@ def handle_infinity_and_na_numpy(*arrays):
                     if np.all(mask[i, :, j]):
                         logging.warning(
                             f"All values are NaN in batch {i}, feature {j}. Looking into other batches for filling...")
-                        for k in range(i, arr.shape[0]):
-                            if not np.all(np.isnan(arr[k, :, j])):
-                                arr[i, :, j] = arr[k, :, j]
-                                logging.info(
-                                    f"Forward filled using batch {k} for batch {i}, feature {j}.")
-                                break
+                        if replace_with_zero:
+                            arr[i, :, j] = 0
+                            logging.debug(
+                                f"Replaced NaN values with 0 in batch {i}, feature {j}.")
+                        else:
+                            for k in range(i, arr.shape[0]):
+                                if not np.all(np.isnan(arr[k, :, j])):
+                                    arr[i, :, j] = arr[k, :, j]
+                                    logging.debug(
+                                        f"Forward filled using batch {k} for batch {i}, feature {j}.")
+                                    break
                     else:
-                        valid_idx = np.flatnonzero(~mask[i, :, j])
-                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(
-                            mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j])
-                        logging.debug(
-                            f"Successfully forward filled NaN values in batch {i}, feature {j}.")
+                        if not replace_with_zero:
+                            valid_idx = np.flatnonzero(~mask[i, :, j])
+                            arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(
+                                mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j])
+                            logging.debug(
+                                f"Successfully forward filled NaN values in batch {i}, feature {j}.")
 
             logging.info("Forward filling completed.")
 
@@ -85,18 +94,24 @@ def handle_infinity_and_na_numpy(*arrays):
                     if np.all(mask[i, :, j]):
                         logging.warning(
                             f"All values are NaN in batch {i}, feature {j}. Looking into other batches for filling...")
-                        for k in range(i, -1, -1):
-                            if not np.all(np.isnan(arr[k, :, j])):
-                                arr[i, :, j] = arr[k, :, j]
-                                logging.info(
-                                    f"Backward filled using batch {k} for batch {i}, feature {j}.")
-                                break
+                        if replace_with_zero:
+                            arr[i, :, j] = 0
+                            logging.debug(
+                                f"Replaced NaN values with 0 in batch {i}, feature {j}.")
+                        else:
+                            for k in range(i, -1, -1):
+                                if not np.all(np.isnan(arr[k, :, j])):
+                                    arr[i, :, j] = arr[k, :, j]
+                                    logging.info(
+                                        f"Backward filled using batch {k} for batch {i}, feature {j}.")
+                                    break
                     else:
-                        valid_idx = np.flatnonzero(~mask[i, :, j])
-                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(
-                            mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j], left=arr[i, ~mask[i, :, j]][-1], right=arr[i, ~mask[i, :, j]][-1])
-                        logging.debug(
-                            f"Successfully backward filled NaN values in batch {i}, feature {j}.")
+                        if not replace_with_zero:
+                            valid_idx = np.flatnonzero(~mask[i, :, j])
+                            arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(
+                                mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j], left=arr[i, ~mask[i, :, j]][-1], right=arr[i, ~mask[i, :, j]][-1])
+                            logging.debug(
+                                f"Successfully backward filled NaN values in batch {i}, feature {j}.")
 
             logging.info(f"Backward filling completed.")
             logging.info(f"Completed processing array {idx + 1}.")
