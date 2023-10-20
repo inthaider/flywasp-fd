@@ -59,6 +59,12 @@ class FeatureEngineer:
                 "All elements of columns_to_scale must be columns in the DataFrame.")
         try:
             logging.info("Standardizing features...")
+            # sklearn's StandardScaler().fit_transform works by first
+            # calculating the mean and standard deviation of each column
+            # and then using those values to standardize the column.
+            # Specifically, it uses the mean to center the data around
+            # zero and the standard deviation to scale the data to unit
+            # variance.
             self.df[columns_to_scale] = self.scaler.fit_transform(
                 self.df[columns_to_scale])
         except Exception as e:
