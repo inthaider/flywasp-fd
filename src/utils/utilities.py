@@ -7,37 +7,29 @@ import numpy as np
 import pandas as pd
 
 
-def handle_infinity_and_na_numpy(*arrays):
+def handle_infinity_and_na_numpy_inplace(*arrays):
     """
     Replaces infinite and NaN values in multiple NumPy arrays with forward/backward filled values.
-    Returns new arrays with the replaced values.
+    Modifies the input arrays in-place.
     """
-    handled_arrays = []
-    
     try:
         logging.info("Handling infinite and NaN values for multiple NumPy arrays...")
 
         for arr in arrays:
-            # Make a copy of the original array
-            new_arr = np.copy(arr)
-
             # Replace infinite values with NaN
-            new_arr[np.isinf(new_arr)] = np.nan
+            arr[np.isinf(arr)] = np.nan
 
             # Forward fill NaN values along each time series (assuming time series are along axis 1)
-            for i in range(new_arr.shape[0]):
-                mask = np.isnan(new_arr[i])
-                new_arr[i][mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), new_arr[i][~mask])
+            for i in range(arr.shape[0]):
+                mask = np.isnan(arr[i])
+                if np.any(mask):
+                    arr[i, mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[i, ~mask])
 
             # Backward fill any remaining NaN values
-            for i in range(new_arr.shape[0]):
-                mask = np.isnan(new_arr[i])
+            for i in range(arr.shape[0]):
+                mask = np.isnan(arr[i])
                 if np.any(mask):
-                    new_arr[i][mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), new_arr[i][~mask], left=new_arr[i][~mask][-1], right=new_arr[i][~mask][-1])
-
-            handled_arrays.append(new_arr)
-
-        return tuple(handled_arrays)
+                    arr[i, mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[i, ~mask], left=arr[i, ~mask][-1], right=arr[i, ~mask][-1])
 
     except Exception as e:
         logging.error(f"Error handling infinite and NaN values in NumPy arrays: {e}")
