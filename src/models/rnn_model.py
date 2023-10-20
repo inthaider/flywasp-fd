@@ -38,8 +38,8 @@ class WalkDataset(Dataset):
     def __getitem__(self, idx):
         return self.X[idx], self.Y[idx]
 
-# Define the training function
 
+# Define the training function
 
 def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=True, prints_per_epoch=10):
     # Create the dataset and data loader
@@ -71,8 +71,14 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         #################
         size_train = len(train_loader.dataset)  # Number of training samples
         num_batches = len(train_loader)  # Number of batches
-        print_interval = num_batches // prints_per_epoch  # Print loss prints_per_epoch times per epoch
-        
+        # Print loss prints_per_epoch times per epoch
+        # print_interval = num_batches // prints_per_epoch
+        print_interval = int(max(num_batches // prints_per_epoch, 1))
+
+        #--------------------#
+        print(f"Print interval: {print_interval}")  # Debugging line
+        #--------------------#
+
         # Set the model to training mode - important for batch normalization and dropout layers
         # This is best practice, but is it necessary here in this situation?
         model.train()
@@ -84,6 +90,7 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         print(f"Number of batches: {num_batches}")  # Print number of batches
         print(f"Batch size: {batch_size}")  # Print batch size
         for i, (inputs, labels) in enumerate(train_loader):
+            # Note that i is the index of the batch and goes up to num_batches - 1
             inputs, labels = inputs.to(device), labels.to(
                 device)  # Move tensors to device, e.g. GPU
             optimizer.zero_grad()  # Zero the parameter gradients
@@ -101,9 +108,19 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
             if np.isnan(loss.item()) or np.isinf(loss.item()):
                 if log_invalid_loss:
                     logging.warning(
-                        f"First occurrence of invalid loss {loss.item()} at iteration {i} of epoch {epoch}. Further warnings will be suppressed.")
+                        f"First occurrence of invalid LOSS:\n"
+                        f"\tLoss        : {loss.item():>15.4f}\n"
+                        f"\tIteration   : {i:>15d}\n"
+                        f"\tEpoch       : {epoch+1:>15d}\n"
+                        f"\tFurther warnings will be suppressed."
+                    )
                     log_invalid_loss = False
-                continue
+
+                    # # Print loss every print_interval iterations
+                    # if int(i) % print_interval == 0:
+                    #     loss, current_iter = loss.item(), (i + 1) * len(inputs)  # loss and current iteration
+                    #     print(
+                    #         f"Loss: {loss:>7f}  [{current_iter:>5d}/{size_train:>5d}]")
 
             # Debugging: Check for NaN or inf in gradients
             for name, param in model.named_parameters():
@@ -113,7 +130,12 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
                     if grad_check > 0:
                         if log_invalid_grad:
                             logging.warning(
-                                f"First occurrence of invalid gradient in {name} at iteration {i} of epoch {epoch}. Further warnings will be suppressed.")
+                                f"First occurrence of invalid GRADIENT:\n"
+                                f"\tParameter   : {name:>15s}\n"
+                                f"\tIteration   : {i:>15d}\n"
+                                f"\tEpoch       : {epoch+1:>15d}\n"
+                                f"\tFurther warnings will be suppressed."
+                            )
                             log_invalid_grad = False
 
             # Debugging: Monitor sum of squared gradients and parameters
@@ -124,19 +146,28 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
                 if param.data is not None:
                     sum_sq_parameters += torch.sum(param.data ** 2).item()
 
-            # Print loss every print_freq iterations
-            if i % print_interval == 0:
+            # # Testing print loss stuff
+            # if i % 5000:
+            #     print("\n\t\tTESTING PRINT LOSS STUFF")
+            #     print(f"\t\ti = {i}")
+            #     print(f"\t\tprint_interval * 2 = {print_interval * 2}")
+            #     print(f"\t\ti % print_interval = {i % print_interval}\n")
+            # Print loss every print_interval iterations
+            if int(i) % print_interval == 0:
                 loss, current_iter = loss.item(), (i + 1) * len(inputs)  # loss and current iteration
                 print(
                     f"Loss: {loss:>7f}  [{current_iter:>5d}/{size_train:>5d}]")
 
         # Log sum of squared gradients and parameters after each epoch
         logging.info(
-            f"Epoch {epoch+1}: Sum of squared gradients: {sum_sq_gradients:.4f}, Sum of squared parameters: {sum_sq_parameters:.4f}")
+            f"Sum squared grads/params in Epoch {epoch+1}:\n"
+            f"\tSum of squared gradients : {sum_sq_gradients:>12.4f}\n"
+            f"\tSum of squared parameters: {sum_sq_parameters:>12.4f}"
+        )
 
         # Calculate average loss over all batches
         train_loss = running_loss / len(train_loader)
-        print(f"Train Error: \n Avg loss: {train_loss:>8f} \n")
+        print(f"\nTrain Error: \n Avg loss: {train_loss:>8f}")
 
         #############
         # Test loop #
@@ -168,7 +199,7 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         test_acc = correct / total
 
         print(
-            f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+            f"Test Error: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
         # print(
         #     f'Epoch {epoch+1}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
 
