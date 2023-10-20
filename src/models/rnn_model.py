@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np  # Added for debugging
 import torch
 import torch.nn as nn
@@ -52,6 +54,10 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
+    # Flags to control logging
+    log_invalid_loss = True
+    log_invalid_grad = True
+
     # Train the model
     for epoch in range(num_epochs):
         model.train()
@@ -69,8 +75,10 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
 
             # Debugging: Check for NaN or inf in loss
             if np.isnan(loss.item()) or np.isinf(loss.item()):
-                print(
-                    f"Skipping iteration {i} of epoch {epoch} due to invalid loss {loss.item()}")
+                if log_invalid_loss:
+                    logging.warning(
+                        f"First occurrence of invalid loss {loss.item()} at iteration {i} of epoch {epoch}. Further warnings will be suppressed.")
+                    log_invalid_loss = False
                 continue
 
             loss.backward()
@@ -81,29 +89,25 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
                     grad_check = torch.sum(torch.isnan(
                         param.grad)) + torch.sum(torch.isinf(param.grad))
                     if grad_check > 0:
-                        print(
-                            f"Skipping iteration {i} of epoch {epoch} due to invalid gradient in {name}")
+                        if log_invalid_grad:
+                            logging.warning(
+                                f"First occurrence of invalid gradient in {name} at iteration {i} of epoch {epoch}. Further warnings will be suppressed.")
+                            log_invalid_grad = False
 
             optimizer.step()
             running_loss += loss.item()
 
-            # Debugging: Print loss at intervals
-            if (i + 1) % 10 == 0:
-                print(
-                    f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}')
-
-            # Debugging: Monitor sum of squared gradients
+            # Debugging: Monitor sum of squared gradients and parameters
             for name, param in model.named_parameters():
                 if param.grad is not None:
                     sum_sq_gradients += torch.sum(param.grad ** 2).item()
-
-            # Debugging: Monitor sum of squared parameters
             for name, param in model.named_parameters():
                 if param.data is not None:
                     sum_sq_parameters += torch.sum(param.data ** 2).item()
 
-        # Print sum of squared gradients and parameters after each epoch
-        print(f"Epoch {epoch+1}: Sum of squared gradients: {sum_sq_gradients:.4f}, Sum of squared parameters: {sum_sq_parameters:.4f}")
+        # Log sum of squared gradients and parameters after each epoch
+        logging.info(
+            f"Epoch {epoch+1}: Sum of squared gradients: {sum_sq_gradients:.4f}, Sum of squared parameters: {sum_sq_parameters:.4f}")
 
         train_loss = running_loss / len(train_loader)
 
@@ -123,7 +127,7 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         test_loss = running_loss / len(test_loader)
         test_acc = correct / total
 
-        print(
+        logging.info(
             f'Epoch {epoch+1}/{num_epochs}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
 
     return model
