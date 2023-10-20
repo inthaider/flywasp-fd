@@ -107,7 +107,8 @@ class DataPreprocessor:
             logging.info("Processed data hashed.")
 
             # Construct the output file path
-            processed_data_path = processed_data_dir / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
+            processed_data_path = processed_data_dir / \
+                f"{timestamp}_processed_data_{processed_data_hash}.pkl"
 
             # Save the processed data to the output file
             logging.info(f"Saving processed data to {processed_data_path}...")

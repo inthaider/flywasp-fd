@@ -1,17 +1,18 @@
+import hashlib
 import logging
+import pickle
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 import torch
 import yaml
-from datetime import datetime
-from pathlib import Path
-from data_preprocess.preprocessing import DataPreprocessor
+
 from data_preprocess.feature_engineering import FeatureEngineer
-from utils.utilities import prepare_train_test_sequences
-from utils.utilities import create_config_dict
-from utils.utilities import get_hash
+from data_preprocess.preprocessing import DataPreprocessor
 from models.rnn_model import train_rnn_model
-import hashlib
-import pickle
+from utils.utilities import (create_config_dict, get_hash,
+                             prepare_train_test_sequences)
 
 
 def preprocess_data(df):
@@ -30,9 +31,12 @@ def preprocess_data(df):
     """
     preprocessor = DataPreprocessor(df=df)
     preprocessor.drop_columns(["plot"])  # Drop the 'plot' column
-    preprocessor.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])  # Calculate the mean of 'ANTdis_1' and 'ANTdis_2' and store it in a new column 'ANTdis'
-    preprocessor.add_labels(["walk_backwards", "walk_backwards"], "start_walk")  # Add a new column 'start_walk' with value 'walk_backwards' for rows where the 'walk_backwards' column has value 'walk_backwards'
-    preprocessor.handle_infinity_and_na()  # Replace infinity and NaN values with appropriate values
+    # Calculate the mean of 'ANTdis_1' and 'ANTdis_2' and store it in a new column 'ANTdis'
+    preprocessor.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])
+    # Add a new column 'start_walk' with value 'walk_backwards' for rows where the 'walk_backwards' column has value 'walk_backwards'
+    preprocessor.add_labels(["walk_backwards", "walk_backwards"], "start_walk")
+    # Replace infinity and NaN values with appropriate values
+    preprocessor.handle_infinity_and_na()
     preprocessor.specific_rearrange(
         "F2Wdis_rate", "F2Wdis"
     )  # Rearrange the column names
@@ -175,7 +179,8 @@ def save_model_and_config(model, model_name, timestamp, pickle_path, processed_d
     None
     """
     # Get the hash values of the model and configuration
-    model_hash = hashlib.md5(str(model.state_dict()).encode('utf-8')).hexdigest()
+    model_hash = hashlib.md5(
+        str(model.state_dict()).encode('utf-8')).hexdigest()
     config_hash = hashlib.md5(str(config).encode('utf-8')).hexdigest()
 
     # Check if the model and configuration already exist
@@ -193,6 +198,7 @@ def save_model_and_config(model, model_name, timestamp, pickle_path, processed_d
         config_path = config_dir / f"{timestamp}_config_{config_hash}.yaml"
         with open(config_path, "w") as f:
             yaml.dump(config, f)
+
 
 def save_train_test_data(X_train, Y_train, X_test, Y_test):
     """
@@ -236,6 +242,7 @@ def save_train_test_data(X_train, Y_train, X_test, Y_test):
         raise
     return dir_name
 
+
 def main():
     """
     Main function that performs data preprocessing, feature engineering, model training, and model saving.
@@ -265,7 +272,8 @@ def main():
     logging.info("Saving processed data...")
     input_data = "ff-mw"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    processed_data_path = preprocessor.save_processed_data(input_data, timestamp)  # Save the processed data to a file
+    processed_data_path = preprocessor.save_processed_data(
+        input_data, timestamp)  # Save the processed data to a file
 
     # Prepare sequences and train-test splits
     logging.info("Preparing sequences and train-test splits...")
@@ -316,7 +324,8 @@ def main():
     config_dir = Path(f"config/{model_name}")
     config_dir.mkdir(parents=True, exist_ok=True)
 
-    save_model_and_config(model, model_name, timestamp, pickle_path, processed_data_path, config, model_dir, config_dir)
+    save_model_and_config(model, model_name, timestamp, pickle_path,
+                          processed_data_path, config, model_dir, config_dir)
 
 
 if __name__ == "__main__":
