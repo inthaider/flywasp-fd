@@ -56,6 +56,11 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0
+
+        # Initialize sum of squared gradients
+        sum_sq_gradients = 0.0
+        sum_sq_parameters = 0.0
+
         for i, (inputs, labels) in enumerate(train_loader):
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
@@ -81,6 +86,24 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
 
             optimizer.step()
             running_loss += loss.item()
+
+            # Debugging: Print loss at intervals
+            if (i + 1) % 10 == 0:
+                print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}')
+
+            # Debugging: Monitor sum of squared gradients
+            for name, param in model.named_parameters():
+                if param.grad is not None:
+                    sum_sq_gradients += torch.sum(param.grad ** 2).item()
+
+            # Debugging: Monitor sum of squared parameters
+            for name, param in model.named_parameters():
+                if param.data is not None:
+                    sum_sq_parameters += torch.sum(param.data ** 2).item()
+
+        # Print sum of squared gradients and parameters after each epoch
+        print(f"Epoch {epoch+1}: Sum of squared gradients: {sum_sq_gradients:.4f}, Sum of squared parameters: {sum_sq_parameters:.4f}")
+
         train_loss = running_loss / len(train_loader)
 
         model.eval()
