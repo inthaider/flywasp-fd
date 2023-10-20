@@ -38,6 +38,23 @@ class WalkDataset(Dataset):
     def __getitem__(self, idx):
         return self.X[idx], self.Y[idx]
 
+# For weight initialization
+
+
+def init_weights(m):
+    """Optional function for weight initialization.
+
+    Uses Xavier uniform initialization for weights and constant initialization
+    for biases.
+
+    Parameters
+    ----------
+    m : torch.nn.Module
+        The module to initialize. Only applies to Linear layers.
+    """
+    if type(m) == nn.Linear:
+        torch.nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0.01)
 
 # Define the training function
 
@@ -53,7 +70,10 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
     # Define the model, loss function, and optimizer
     model = RNN(input_size=input_size, hidden_size=hidden_size,
                 output_size=output_size, batch_first=batch_first).to(device)
-    criterion = nn.CrossEntropyLoss()  # Using CrossEntropyLoss as the loss function
+    # Apply the weight initialization
+    model.apply(init_weights)
+    # Using CrossEntropyLoss as the loss function
+    criterion = nn.CrossEntropyLoss()
     # Using SGD as the optimizer
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
@@ -90,6 +110,13 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         print(f"Number of batches: {num_batches}")  # Print number of batches
         print(f"Batch size: {batch_size}")  # Print batch size
         for i, (inputs, labels) in enumerate(train_loader):
+            # Debugging: Check for NaN or inf in inputs
+            nan_positions = torch.nonzero(torch.isnan(inputs), as_tuple=True)
+            inf_positions = torch.nonzero(torch.isinf(inputs), as_tuple=True)
+
+            assert not torch.isnan(inputs).any(), f"NaN values found at positions {nan_positions}"
+            assert not torch.isinf(inputs).any(), f"inf values found at positions {inf_positions}"
+
             # Note that i is the index of the batch and goes up to num_batches - 1
             inputs, labels = inputs.to(device), labels.to(
                 device)  # Move tensors to device, e.g. GPU
@@ -160,7 +187,7 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
 
         # Log sum of squared gradients and parameters after each epoch
         logging.info(
-            f"Sum squared grads/params in Epoch {epoch+1}:\n"
+            f"\nSum squared grads/params in Epoch {epoch+1}:\n"
             f"\tSum of squared gradients : {sum_sq_gradients:>12.4f}\n"
             f"\tSum of squared parameters: {sum_sq_parameters:>12.4f}"
         )
