@@ -1,3 +1,4 @@
+import numpy as np  # Added for debugging
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -60,7 +61,24 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
+
+            # Debugging: Check for NaN or inf in loss
+            if np.isnan(loss.item()) or np.isinf(loss.item()):
+                print(
+                    f"Skipping iteration {i} of epoch {epoch} due to invalid loss {loss.item()}")
+                continue
+
             loss.backward()
+
+            # Debugging: Check for NaN or inf in gradients
+            for name, param in model.named_parameters():
+                if param.grad is not None:
+                    grad_check = torch.sum(torch.isnan(
+                        param.grad)) + torch.sum(torch.isinf(param.grad))
+                    if grad_check > 0:
+                        print(
+                            f"Skipping iteration {i} of epoch {epoch} due to invalid gradient in {name}")
+
             optimizer.step()
             running_loss += loss.item()
         train_loss = running_loss / len(train_loader)
