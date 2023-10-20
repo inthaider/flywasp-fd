@@ -215,11 +215,20 @@ class DataPreprocessor:
 
     def handle_infinity_and_na(self):
         """
-        Replaces infinite and NaN values in the DataFrame with NaN.
+        Replaces infinite and NaN values in the DataFrame with forward/backward filled values.
         """
         try:
             logging.info("Handling infinite and NaN values...")
+
+            # Replace infinite values with NaN
             self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
+
+            # Forward fill NaN values
+            self.df.fillna(method='ffill', inplace=True)
+
+            # Backward fill any remaining NaN values
+            self.df.fillna(method='bfill', inplace=True)
+
         except Exception as e:
             logging.error(f"Error handling infinite and NaN values: {e}")
             raise
