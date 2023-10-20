@@ -7,10 +7,10 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, hidden_size, output_size, batch_first=True):
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
-        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
+        self.rnn = nn.RNN(input_size, hidden_size, batch_first=batch_first)
         self.fc = nn.Linear(hidden_size, output_size)
         self.sigmoid = nn.Sigmoid()
 
@@ -36,7 +36,7 @@ class WalkDataset(Dataset):
         return self.X[idx], self.Y[idx]
 
 
-def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device):
+def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=True):
     # Create the dataset and data loader
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
@@ -47,7 +47,7 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
 
     # Define the model, loss function, and optimizer
     model = RNN(input_size=input_size, hidden_size=hidden_size,
-                output_size=output_size).to(device)
+                output_size=output_size, batch_first=True).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 

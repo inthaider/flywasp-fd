@@ -11,6 +11,7 @@ from utils.utilities import create_config_dict
 from utils.utilities import get_hash
 from models.rnn_model import train_rnn_model
 import hashlib
+import pickle
 
 
 def preprocess_data(df):
@@ -193,6 +194,47 @@ def save_model_and_config(model, model_name, timestamp, pickle_path, processed_d
         with open(config_path, "w") as f:
             yaml.dump(config, f)
 
+def save_train_test_data(X_train, Y_train, X_test, Y_test):
+    """
+    Saves the train and test datasets for the RNN model as .pkl files.
+
+    Parameters
+    ----------
+    X_train : numpy.ndarray
+        The training input sequences.
+    Y_train : numpy.ndarray
+        The training target values.
+    X_test : numpy.ndarray
+        The testing input sequences.
+    Y_test : numpy.ndarray
+        The testing target values.
+    """
+    try:
+        # Create a timestamped directory for the processed data
+        timestamp = datetime.now().strftime("%Y%m%d")
+        dir_name = Path(f"data/processed/rnn_input/{timestamp}")
+        dir_name.mkdir(parents=True, exist_ok=True)
+
+        # Save the train and test datasets as .pkl files
+        X_train_file = dir_name / "X_train.pkl"
+        Y_train_file = dir_name / "Y_train.pkl"
+        X_test_file = dir_name / "X_test.pkl"
+        Y_test_file = dir_name / "Y_test.pkl"
+
+        with open(X_train_file, "wb") as f:
+            pickle.dump(X_train, f)
+        with open(Y_train_file, "wb") as f:
+            pickle.dump(Y_train, f)
+        with open(X_test_file, "wb") as f:
+            pickle.dump(X_test, f)
+        with open(Y_test_file, "wb") as f:
+            pickle.dump(Y_test, f)
+
+        logging.info(f"Saved train and test datasets to {dir_name}.")
+    except Exception as e:
+        logging.error(f"Error saving train and test datasets: {e}")
+        raise
+    return dir_name
 
 def main():
     """
@@ -228,6 +270,10 @@ def main():
     # Prepare sequences and train-test splits
     logging.info("Preparing sequences and train-test splits...")
     X_train, Y_train, X_test, Y_test = prepare_train_test_sequences(df)
+
+    # Save the train-test splits
+    logging.info("Saving train-test splits...")
+    save_train_test_data(X_train, Y_train, X_test, Y_test)
 
     # Train the RNN model
     logging.info("Training RNN model...")
