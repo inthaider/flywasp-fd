@@ -9,34 +9,53 @@ import pandas as pd
 
 def handle_infinity_and_na_numpy(*arrays):
     """
-    Replaces infinite and NaN values in multiple NumPy arrays with forward/backward filled values.
-    Modifies the input arrays in-place.
+    Replaces infinite and NaN values in multiple NumPy arrays for RNN input X (not Y!) with forward/backward filled values.
+    Modifies the RNN input X arrays in-place.
     """
     try:
-        logging.info(
-            "Handling infinite and NaN values for multiple NumPy arrays...")
-
-        for arr in arrays:
+        logging.info("Handling infinite and NaN values for multiple NumPy arrays...")
+        
+        for idx, arr in enumerate(arrays):
+            logging.info(f"Processing array {idx + 1} of {len(arrays)}...")
+            
             # Replace infinite values with NaN
+            logging.info("Replacing infinite values with NaN...")
             arr[np.isinf(arr)] = np.nan
 
-            # Forward fill NaN values along each time series (assuming time series are along axis 1)
+            # Forward fill NaN values along each time series (axis=1)
+            logging.info("Forward filling NaN values...")
+            mask = np.isnan(arr)
             for i in range(arr.shape[0]):
-                mask = np.isnan(arr[i])
-                if np.any(mask):
-                    arr[i, mask] = np.interp(np.flatnonzero(
-                        mask), np.flatnonzero(~mask), arr[i, ~mask])
+                for j in range(arr.shape[2]):
+                    if np.all(mask[i, :, j]):
+                        # If all values are NaN, look for the nearest non-NaN value in other batches
+                        for k in range(i, arr.shape[0]):
+                            if not np.all(np.isnan(arr[k, :, j])):
+                                arr[i, :, j] = arr[k, :, j]
+                                break
+                    else:
+                        valid_idx = np.flatnonzero(~mask[i, :, j])
+                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j])
 
             # Backward fill any remaining NaN values
-            for i in range(arr.shape[0]):
-                mask = np.isnan(arr[i])
-                if np.any(mask):
-                    arr[i, mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(
-                        ~mask), arr[i, ~mask], left=arr[i, ~mask][-1], right=arr[i, ~mask][-1])
+            logging.info("Backward filling remaining NaN values...")
+            mask = np.isnan(arr)
+            for i in range(arr.shape[0] - 1, -1, -1):
+                for j in range(arr.shape[2]):
+                    if np.all(mask[i, :, j]):
+                        # If all values are NaN, look for the nearest non-NaN value in other batches
+                        for k in range(i, -1, -1):
+                            if not np.all(np.isnan(arr[k, :, j])):
+                                arr[i, :, j] = arr[k, :, j]
+                                break
+                    else:
+                        valid_idx = np.flatnonzero(~mask[i, :, j])
+                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j], left=arr[i, ~mask[i, :, j]][-1], right=arr[i, ~mask[i, :, j]][-1])
+
+            logging.info(f"Completed processing array {idx + 1}.")
 
     except Exception as e:
-        logging.error(
-            f"Error handling infinite and NaN values in NumPy arrays: {e}")
+        logging.error(f"Error handling infinite and NaN values in NumPy arrays: {e}")
         raise
 
 
