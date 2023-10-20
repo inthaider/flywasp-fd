@@ -7,13 +7,14 @@ import numpy as np
 import pandas as pd
 
 
-def handle_infinity_and_na_numpy_inplace(*arrays):
+def handle_infinity_and_na_numpy(*arrays):
     """
     Replaces infinite and NaN values in multiple NumPy arrays with forward/backward filled values.
     Modifies the input arrays in-place.
     """
     try:
-        logging.info("Handling infinite and NaN values for multiple NumPy arrays...")
+        logging.info(
+            "Handling infinite and NaN values for multiple NumPy arrays...")
 
         for arr in arrays:
             # Replace infinite values with NaN
@@ -23,16 +24,19 @@ def handle_infinity_and_na_numpy_inplace(*arrays):
             for i in range(arr.shape[0]):
                 mask = np.isnan(arr[i])
                 if np.any(mask):
-                    arr[i, mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[i, ~mask])
+                    arr[i, mask] = np.interp(np.flatnonzero(
+                        mask), np.flatnonzero(~mask), arr[i, ~mask])
 
             # Backward fill any remaining NaN values
             for i in range(arr.shape[0]):
                 mask = np.isnan(arr[i])
                 if np.any(mask):
-                    arr[i, mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[i, ~mask], left=arr[i, ~mask][-1], right=arr[i, ~mask][-1])
+                    arr[i, mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(
+                        ~mask), arr[i, ~mask], left=arr[i, ~mask][-1], right=arr[i, ~mask][-1])
 
     except Exception as e:
-        logging.error(f"Error handling infinite and NaN values in NumPy arrays: {e}")
+        logging.error(
+            f"Error handling infinite and NaN values in NumPy arrays: {e}")
         raise
 
 
