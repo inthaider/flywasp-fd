@@ -89,7 +89,8 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
 
             # Debugging: Print loss at intervals
             if (i + 1) % 10 == 0:
-                print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}')
+                print(
+                    f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}')
 
             # Debugging: Monitor sum of squared gradients
             for name, param in model.named_parameters():
