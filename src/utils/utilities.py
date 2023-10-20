@@ -9,53 +9,101 @@ import pandas as pd
 
 def handle_infinity_and_na_numpy(*arrays):
     """
-    Replaces infinite and NaN values in multiple NumPy arrays for RNN input X (not Y!) with forward/backward filled values.
-    Modifies the RNN input X arrays in-place.
+    Replaces infinite and NaN values in multiple NumPy arrays of RNN input X (not Y!) with forward/backward filled values.
+    This function modifies the RNN input X arrays in-place.
+
+    If a feature in a given batch (i.e., a specific sample or observation) and time step is NaN,
+    the function will look for the nearest non-NaN value in the same feature but different time step 
+    within the same batch. If all time steps for that feature in that batch are NaN, the function 
+    will look for the nearest non-NaN value in the same feature and time step but in a different batch.
+
+    Parameters
+    ----------
+    *arrays : array_like
+        One or more NumPy arrays to be processed.
+
+    Raises
+    ------
+    Exception
+        If an error occurs while handling infinite and NaN values.
+
+    Notes
+    -----
+    - The function assumes that the first axis (axis=0) corresponds to different batches or samples, 
+      the second axis (axis=1) corresponds to different time steps in each sample, and the third axis (axis=2) 
+      corresponds to different features.
+    - The function modifies the input arrays in-place. Make sure to keep copies if the original data 
+      is needed later.
+    - Logging is used for debug and info messages. Make sure to configure your logging level accordingly.
     """
+
     try:
-        logging.info("Handling infinite and NaN values for multiple NumPy arrays...")
-        
+        logging.info(
+            "Starting to handle infinite and NaN values for multiple NumPy arrays...")
+
         for idx, arr in enumerate(arrays):
-            logging.info(f"Processing array {idx + 1} of {len(arrays)}...")
-            
+            logging.info(
+                f"Starting to process array {idx + 1} of {len(arrays)}...")
+
             # Replace infinite values with NaN
             logging.info("Replacing infinite values with NaN...")
             arr[np.isinf(arr)] = np.nan
+            logging.info("Infinite values replaced with NaN.")
 
             # Forward fill NaN values along each time series (axis=1)
-            logging.info("Forward filling NaN values...")
+            logging.info("Starting forward fill for NaN values...")
             mask = np.isnan(arr)
             for i in range(arr.shape[0]):
                 for j in range(arr.shape[2]):
+                    logging.debug(
+                        f"Forward filling NaN values in batch {i}, feature {j}...")
                     if np.all(mask[i, :, j]):
-                        # If all values are NaN, look for the nearest non-NaN value in other batches
+                        logging.warning(
+                            f"All values are NaN in batch {i}, feature {j}. Looking into other batches for filling...")
                         for k in range(i, arr.shape[0]):
                             if not np.all(np.isnan(arr[k, :, j])):
                                 arr[i, :, j] = arr[k, :, j]
+                                logging.info(
+                                    f"Forward filled using batch {k} for batch {i}, feature {j}.")
                                 break
                     else:
                         valid_idx = np.flatnonzero(~mask[i, :, j])
-                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j])
+                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(
+                            mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j])
+                        logging.debug(
+                            f"Successfully forward filled NaN values in batch {i}, feature {j}.")
+
+            logging.info("Forward filling completed.")
 
             # Backward fill any remaining NaN values
-            logging.info("Backward filling remaining NaN values...")
+            logging.info("Starting backward fill for remaining NaN values...")
             mask = np.isnan(arr)
             for i in range(arr.shape[0] - 1, -1, -1):
                 for j in range(arr.shape[2]):
+                    logging.debug(
+                        f"Backward filling NaN values in batch {i}, feature {j}...")
                     if np.all(mask[i, :, j]):
-                        # If all values are NaN, look for the nearest non-NaN value in other batches
+                        logging.warning(
+                            f"All values are NaN in batch {i}, feature {j}. Looking into other batches for filling...")
                         for k in range(i, -1, -1):
                             if not np.all(np.isnan(arr[k, :, j])):
                                 arr[i, :, j] = arr[k, :, j]
+                                logging.info(
+                                    f"Backward filled using batch {k} for batch {i}, feature {j}.")
                                 break
                     else:
                         valid_idx = np.flatnonzero(~mask[i, :, j])
-                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j], left=arr[i, ~mask[i, :, j]][-1], right=arr[i, ~mask[i, :, j]][-1])
+                        arr[i, mask[i, :, j], j] = np.interp(np.flatnonzero(
+                            mask[i, :, j]), valid_idx, arr[i, ~mask[i, :, j], j], left=arr[i, ~mask[i, :, j]][-1], right=arr[i, ~mask[i, :, j]][-1])
+                        logging.debug(
+                            f"Successfully backward filled NaN values in batch {i}, feature {j}.")
 
+            logging.info(f"Backward filling completed.")
             logging.info(f"Completed processing array {idx + 1}.")
 
     except Exception as e:
-        logging.error(f"Error handling infinite and NaN values in NumPy arrays: {e}")
+        logging.error(
+            f"Error while handling infinite and NaN values in NumPy arrays: {e}")
         raise
 
 
