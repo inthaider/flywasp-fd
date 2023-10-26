@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+from torch.utils.tensorboard import SummaryWriter
 
 # Define the RNN model
 
@@ -77,9 +78,8 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
     # Using SGD as the optimizer
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
-    # Flags to control logging
-    log_invalid_loss = True
-    log_invalid_grad = True
+    # Create a SummaryWriter for logging to TensorBoard
+    writer = SummaryWriter()
 
     ################################
     # Train and evaluate the model #
@@ -229,5 +229,13 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
             f"Test Error: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
         # print(
         #     f'Epoch {epoch+1}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
+
+        # Log loss and accuracy to TensorBoard
+        writer.add_scalar('Train Loss', train_loss, epoch)
+        writer.add_scalar('Test Loss', test_loss, epoch)
+        writer.add_scalar('Test Accuracy', test_acc, epoch)
+
+    # Close the SummaryWriter
+    writer.close()
 
     return model
