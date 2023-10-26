@@ -173,12 +173,23 @@ def get_hash(obj):
 
 def create_sequences(data, sequence_length=3):
     n = len(data) - sequence_length
-    x = np.zeros((n, sequence_length, data.shape[1]))
-    y = np.zeros(n)
+    x = np.empty((n, sequence_length, data.shape[1]))
+    y = np.empty(n)
+    
+    valid_idx = 0
     for i in range(n):
-        x[i] = data[i:i + sequence_length]
-        # Assuming the target column is the last one
-        y[i] = data[i + sequence_length, -1]
+        sequence = data[i:i + sequence_length]
+        target = data[i + sequence_length, -1]
+        
+        # Check if there are any missing values in the sequence or target
+        if not np.isnan(sequence).any() and not np.isnan(target):
+            x[valid_idx] = sequence
+            y[valid_idx] = target
+            valid_idx += 1
+            
+    # Trim the arrays to the size of valid sequences
+    x = x[:valid_idx]
+    y = y[:valid_idx]
     return x, y
 
 
