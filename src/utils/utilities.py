@@ -172,6 +172,44 @@ def get_hash(obj):
 
 
 def create_sequences(data, sequence_length=3):
+    """
+    Create sequences of length `sequence_length` from the input `data`.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        The input data, with shape `(n_samples, n_features)`.
+    sequence_length : int, optional
+        The length of the sequences to create. Default is 3.
+
+    Returns
+    -------
+    x : numpy.ndarray
+        The input sequences, with shape `(n_samples - sequence_length, sequence_length, n_features)`.
+    y : numpy.ndarray
+        The target values, with shape `(n_samples - sequence_length,)`.
+
+    Notes
+    -----
+    This function creates sequences of length `sequence_length` from the input `data`. Each sequence consists of `sequence_length`
+    consecutive rows of `data`, and the target value for each sequence is the value in the last row of the sequence.
+
+    Examples
+    --------
+    >>> data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]])
+    >>> x, y = create_sequences(data, sequence_length=2)
+    >>> x
+    array([[[ 1.,  2.,  3.],
+            [ 4.,  5.,  6.]],
+
+           [[ 4.,  5.,  6.],
+            [ 7.,  8.,  9.]],
+
+           [[ 7.,  8.,  9.],
+            [10., 11., 12.]]])
+    >>> y
+    array([ 6.,  9., 12.])
+    """
     n = len(data) - sequence_length
     x = np.zeros((n, sequence_length, data.shape[1]))
     y = np.zeros(n)

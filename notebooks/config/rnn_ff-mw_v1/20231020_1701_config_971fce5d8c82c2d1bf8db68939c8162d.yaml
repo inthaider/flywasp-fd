@@ -1,0 +1,16 @@
+data:
+  interim_data_path: data/interim/ff-mw.pkl
+  processed_data_path: data/processed/rnn_input/
+  raw_data_path: null
+logging:
+  format: '%(asctime)s - %(levelname)s - %(module)s - %(message)s'
+  level: DEBUG
+model:
+  rnn:
+    batch_size: 512
+    hidden_size: 64
+    input_size: 19
+    learning_rate: 0.001
+    num_epochs: 10
+    output_size: 2
+model_name: 20231020_1701_rnn_ff-mw_v1
