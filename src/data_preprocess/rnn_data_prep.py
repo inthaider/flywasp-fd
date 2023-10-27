@@ -155,6 +155,8 @@ class RNNDataPrep:
         Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
             The train-test splits as (X_train, Y_train, X_test, Y_test).
         """
+        logging.info("Starting to prepare train and test sequences...")
+
         # Initial checks and setup
         if not isinstance(df, pd.DataFrame):
             raise TypeError("df must be a pandas DataFrame.")
@@ -165,27 +167,36 @@ class RNNDataPrep:
         if not (0 < split_ratio < 1):
             raise ValueError("split_ratio must be between 0 and 1.")
 
+        logging.info("Initial checks and setup completed.")
+
+        logging.info("Converting DataFrame to NumPy array...")
         # Convert the DataFrame to a NumPy array for faster slicing
         df_values = df.values
+        logging.info("Converted DataFrame to NumPy array.")
 
         # Create empty lists to collect the sequences
+        logging.info("Initializing empty arrays for collecting sequences...")
         X_train, Y_train = [], []
         X_test, Y_test = [], []
 
         # Calculate sizes in advance for pre-allocation
+        logging.info("Calculating sizes in advance for pre-allocation...")
         unique_files = df['file'].unique()
         total_sequences = sum(
             len(df[df['file'] == file]) - sequence_length for file in unique_files)
         train_size = int(total_sequences * split_ratio)
         test_size = total_sequences - train_size
+        logging.info(
+            f"Calculated train_size: {train_size}, test_size: {test_size}")
 
         # Pre-allocate numpy arrays
-        # -2 because we're dropping 'Frame' and 'file'
-        input_dim = df.shape[1] - 2
+        logging.info("Pre-allocating numpy arrays...")
+        input_dim = df.shape[1] - 2  # -2 because we're dropping 'Frame' and 'file'
         X_train = np.zeros((train_size, sequence_length, input_dim))
         Y_train = np.zeros(train_size)
         X_test = np.zeros((test_size, sequence_length, input_dim))
         Y_test = np.zeros(test_size)
+        logging.info("Pre-allocated NumPy arrays for train and test sets.")
 
         train_idx, test_idx = 0, 0
 
@@ -198,14 +209,16 @@ class RNNDataPrep:
                 ['Frame', 'file'], axis=1).values
 
             # Create sequences for each file
-            x, y = self._create_seqs(
-                file_data, sequence_length=sequence_length)
+            logging.info("Creating sequences for the current file...")
+            x, y = self._create_seqs(file_data, sequence_length=sequence_length)
 
             # Calculate the split index for this file
             n = len(x)
             file_train_size = int(n * split_ratio)
+            logging.info(f"Calculated file_train_size: {file_train_size}")
 
             # Add the sequences to the pre-allocated arrays
+            logging.info("Adding sequences to pre-allocated arrays...")
             X_train[train_idx:train_idx +
                     file_train_size] = x[:file_train_size]
             Y_train[train_idx:train_idx +
@@ -216,18 +229,22 @@ class RNNDataPrep:
                    file_train_size] = y[file_train_size:]
             
             # Drop the target column from the input sequences
+            logging.info("Dropping the target column from input sequences...")
             X_train = X_train[:, :, :-1]
             X_test = X_test[:, :, :-1]
 
             # Update the indices for the next iteration
+            logging.info("Updating the indices for the next iteration...")
             train_idx += file_train_size
             test_idx += n - file_train_size
 
-            i = i+1
+            i = i + 1
 
         logging.info(
             f"Prepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
+        logging.info("Train and test sequence preparation completed.")
         return X_train, Y_train, X_test, Y_test
+
 
     def _create_seqs(self, data: np.ndarray, sequence_length: int) -> Tuple[np.ndarray, np.ndarray]:
         """
