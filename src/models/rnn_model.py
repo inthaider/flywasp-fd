@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 
@@ -253,12 +254,15 @@ def train_loop(model, batch_size, device, prints_per_epoch, train_loader, criter
     running_loss = 0.0
     sum_sq_gradients = 0.0
     sum_sq_parameters = 0.0
+    # Initialize true and predicted labels for F1 score calculation
+    true_labels = []
+    pred_labels = []
 
     print(f"Number of batches: {num_batches}")  # Print number of batches
     print(f"Batch size: {batch_size}")  # Print batch size
     for i, (inputs, labels) in enumerate(train_loader):
         # Debugging: Check for NaN or inf in inputs
-        nan_positions, inf_positions = debug_input_nan_inf(inputs)
+        debug_input_nan_inf(inputs)
 
         # Note that i is the index of the batch and goes up to num_batches - 1
         inputs, labels = inputs.to(device), labels.to(
@@ -281,6 +285,13 @@ def train_loop(model, batch_size, device, prints_per_epoch, train_loader, criter
         # Debugging: Monitor sum of squared gradients and parameters
         debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters)
 
+        # Get predicted class
+        # The line below is basically taking the outputs tensor, which has shape (batch_size, 2), and getting the index of the maximum value in each row (i.e. the predicted class) and returning a tensor of shape (batch_size, 1)
+        _, predicted = torch.max(outputs.data, 1)
+        # Accumulate true and predicted labels for F1 score calculation
+        true_labels.extend(labels.cpu().numpy())
+        pred_labels.extend(predicted.cpu().numpy())
+
         # Print loss every print_interval iterations
         if int(i) % print_interval == 0:
             loss, current_iter = loss.item(), (i + 1) * len(inputs)  # loss and current iteration
@@ -295,8 +306,12 @@ def train_loop(model, batch_size, device, prints_per_epoch, train_loader, criter
     )
     # Calculate average loss over all batches
     train_loss = running_loss / len(train_loader)
-    print(f"\nTrain Error: \n Avg loss: {train_loss:>8f}")
-    return train_loss
+    # Calculate F1 score for training data
+    train_f1 = f1_score(true_labels, pred_labels)
+
+    print(f"\nTrain Performance: \n Avg loss: {train_loss:>8f}, F1 Score: {train_f1:.4f} \n")
+
+    return train_loss, train_f1
 
 
 def test_loop(model, device, test_loader, criterion):
@@ -328,29 +343,42 @@ def test_loop(model, device, test_loader, criterion):
     running_loss = 0.0
     correct = 0
     total = 0
+    # Initialize true and predicted labels for F1 score calculation
+    true_labels = []
+    pred_labels = []
+
     # Evaluating the model with torch.no_grad() ensures that no gradients are computed during test mode
     # also serves to reduce unnecessary gradient computations and memory usage for tensors with requires_grad=True
     with torch.no_grad():
         for i, (inputs, labels) in enumerate(test_loader):
             inputs, labels = inputs.to(device), labels.to(
                 device)  # Move tensors to device, e.g. GPU
+            
             outputs = model(inputs)  # Forward pass
+
             loss = criterion(outputs, labels)  # Compute loss
             running_loss += loss.item()  # Accumulate loss
             _, predicted = torch.max(
                 outputs.data, 1)  # Get predicted class
+            
             total += labels.size(0)  # Accumulate total number of samples
             # Accumulate number of correct predictions
             correct += (predicted == labels).sum().item()
+            
+            # Accumulate true and predicted labels for F1 score calculation
+            true_labels.extend(labels.cpu().numpy())
+            pred_labels.extend(predicted.cpu().numpy())
 
     # Calculate average loss and accuracy over all batches
     test_loss = running_loss / len(test_loader)
     test_acc = correct / total
+    # Calculate F1 score for testing data
+    test_f1 = f1_score(true_labels, pred_labels, average='macro')
 
     print(
-        f"Test Error: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        f"Test Performance: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f}, F1 Score: {test_f1:.4f} \n")
 
-    return test_loss, test_acc
+    return test_loss, test_acc, test_f1
 
 
 def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=True, prints_per_epoch=10):
@@ -407,73 +435,28 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}\n-------------------------------")
         # Train the model
-        train_loss = train_loop(model, batch_size, device,
+        train_loss, train_f1 = train_loop(model, batch_size, device,
                                 prints_per_epoch, train_loader, criterion, optimizer, epoch)
 
         # Evaluate/Test the model
-        test_loss, test_acc = test_loop(model, device, test_loader, criterion)
+        test_loss, test_acc, test_f1 = test_loop(model, device, test_loader, criterion)
 
         # print(
         #     f'Epoch {epoch+1}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
 
         # Log loss and accuracy to TensorBoard
         writer.add_scalar('Train Loss', train_loss, epoch)
+        writer.add_scalar('Train F1 Score', train_f1, epoch)
         writer.add_scalar('Test Loss', test_loss, epoch)
         writer.add_scalar('Test Accuracy', test_acc, epoch)
+        writer.add_scalar('Test F1 Score', test_f1, epoch)
+
+        print(f"\n Epoch {epoch+1} Metrics -- Train Loss: {train_loss:.4f}, Train F1 Score: {train_f1:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, Test F1: {test_f1:.4f}")
 
     # Close the SummaryWriter
     writer.close()
 
     return model
-
-
-def save_model_and_config(model, model_name, timestamp, pickle_path, processed_data_path, config, model_dir, config_dir):
-    """
-    Saves the trained model and configuration settings.
-
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The trained RNN model.
-    model_name : str
-        The name of the model.
-    timestamp : str
-        The timestamp to use in the output file names.
-    pickle_path : str
-        The path to the input data pickle file.
-    processed_data_path : str
-        The path to the processed data pickle file.
-    config : dict
-        The configuration settings for the model.
-    model_dir : pathlib.Path
-        The directory to save the trained model.
-    config_dir : pathlib.Path
-        The directory to save the configuration settings.
-
-    Returns
-    -------
-    None
-    """
-    # Get the hash values of the model and configuration
-    model_hash = hashlib.md5(
-        str(model.state_dict()).encode('utf-8')).hexdigest()
-    config_hash = hashlib.md5(str(config).encode('utf-8')).hexdigest()
-
-    # Check if the model and configuration already exist
-    existing_models = [f.name for f in model_dir.glob("*.pt")]
-    existing_configs = [f.name for f in config_dir.glob("*.yaml")]
-    if f"rnn_model_{model_hash}.pt" in existing_models and f"config_{config_hash}.yaml" in existing_configs:
-        logging.info("Model and configuration already exist. Skipping saving.")
-    else:
-        # Save the trained model
-        model_path = model_dir / \
-            f"{timestamp}_model_{model_hash}_{config_hash}.pt"
-        torch.save(model.state_dict(), model_path)
-
-        # Save the configuration settings
-        config_path = config_dir / f"{timestamp}_config_{config_hash}.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(config, f)
 
 
 def debug_input_nan_inf(inputs):
@@ -496,7 +479,6 @@ def debug_input_nan_inf(inputs):
     inf_positions = torch.nonzero(torch.isinf(inputs), as_tuple=True)
     assert not torch.isinf(inputs).any(
     ), f"inf values found at positions {inf_positions}"
-    return nan_positions, inf_positions
 
 
 def debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters):
@@ -586,3 +568,52 @@ def debug_loss_nan_inf(epoch, i, loss):
                 f"\tFurther warnings will be suppressed."
             )
             log_invalid_loss = False
+
+
+def save_model_and_config(model, model_name, timestamp, pickle_path, processed_data_path, config, model_dir, config_dir):
+    """
+    Saves the trained model and configuration settings.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The trained RNN model.
+    model_name : str
+        The name of the model.
+    timestamp : str
+        The timestamp to use in the output file names.
+    pickle_path : str
+        The path to the input data pickle file.
+    processed_data_path : str
+        The path to the processed data pickle file.
+    config : dict
+        The configuration settings for the model.
+    model_dir : pathlib.Path
+        The directory to save the trained model.
+    config_dir : pathlib.Path
+        The directory to save the configuration settings.
+
+    Returns
+    -------
+    None
+    """
+    # Get the hash values of the model and configuration
+    model_hash = hashlib.md5(
+        str(model.state_dict()).encode('utf-8')).hexdigest()
+    config_hash = hashlib.md5(str(config).encode('utf-8')).hexdigest()
+
+    # Check if the model and configuration already exist
+    existing_models = [f.name for f in model_dir.glob("*.pt")]
+    existing_configs = [f.name for f in config_dir.glob("*.yaml")]
+    if f"rnn_model_{model_hash}.pt" in existing_models and f"config_{config_hash}.yaml" in existing_configs:
+        logging.info("Model and configuration already exist. Skipping saving.")
+    else:
+        # Save the trained model
+        model_path = model_dir / \
+            f"{timestamp}_model_{model_hash}_{config_hash}.pt"
+        torch.save(model.state_dict(), model_path)
+
+        # Save the configuration settings
+        config_path = config_dir / f"{timestamp}_config_{config_hash}.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)
