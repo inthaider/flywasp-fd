@@ -453,6 +453,9 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
 
         print(f"\n Epoch {epoch+1} Metrics -- Train Loss: {train_loss:.4f}, Train F1 Score: {train_f1:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, Test F1: {test_f1:.4f}")
 
+    # Flush the SummaryWriter
+    # Doing this ensures that the metrics are written to disk
+    writer.flush()
     # Close the SummaryWriter
     writer.close()
 
