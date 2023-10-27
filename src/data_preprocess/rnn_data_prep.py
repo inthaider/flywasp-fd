@@ -6,6 +6,7 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
+from imblearn.over_sampling import RandomOverSampler
 
 from src.data_preprocess.feature_engineering import FeatureEngineer
 from src.data_preprocess.preprocessing import DataPreprocessor
@@ -92,6 +93,9 @@ class RNNDataPrep:
         X_train, Y_train, X_test, Y_test = self._prep_train_test_seqs(
             df, sequence_length=sequence_length, split_ratio=split_ratio)
 
+        # Perform Random Oversampling
+        X_train, Y_train = self._perform_random_oversampling(X_train, Y_train)
+        
         # Save the train-test splits
         logging.info("Saving train-test splits...")
         rnn_data_path = self._save_train_test_data(
@@ -210,6 +214,10 @@ class RNNDataPrep:
                    file_train_size] = x[file_train_size:]
             Y_test[test_idx:test_idx + n -
                    file_train_size] = y[file_train_size:]
+            
+            # Drop the target column from the input sequences
+            X_train = X_train[:, :, :-1]
+            X_test = X_test[:, :, :-1]
 
             # Update the indices for the next iteration
             train_idx += file_train_size
@@ -263,6 +271,41 @@ class RNNDataPrep:
         x = x[:valid_idx]
         y = y[:valid_idx]
         return x, y
+
+
+    def _perform_random_oversampling(self, X_train, Y_train):
+        """
+        Performs random oversampling to balance the class distribution.
+
+        Parameters
+        ----------
+        X_train : numpy.ndarray
+            The training input sequences.
+        Y_train : numpy.ndarray
+            The training target values.
+
+        Returns
+        -------
+        X_train_resampled : numpy.ndarray
+            The resampled training input sequences.
+        Y_train_resampled : numpy.ndarray
+            The resampled training target values.
+        """
+        ros = RandomOverSampler(random_state=42)
+        X_train_resampled, Y_train_resampled = ros.fit_resample(
+            X_train.reshape(X_train.shape[0], -1), Y_train)
+
+        # Reshape X_train back to its original shape
+        original_shape = X_train.shape[1:]
+        X_train_resampled = X_train_resampled.reshape(-1, *original_shape)
+
+        # Logging messages comparing the original and resampled dataset shapes for both X_train and Y_train with appropriate formatting and spacing in the printed output (using f-strings and :> formatting)
+        logging.info(f"Original dataset shape: {X_train.shape:>10}, {Y_train.shape:>10}")
+        logging.info(f"Resampled dataset shape: {X_train_resampled.shape:>10}, {Y_train_resampled.shape:>10}")
+
+
+
+        return X_train_resampled, Y_train_resampled
 
     def _load_train_test_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
