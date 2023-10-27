@@ -1,4 +1,8 @@
+from datetime import datetime
+import hashlib
 import logging
+from pathlib import Path
+import pickle
 
 import numpy as np  # Added for debugging
 import torch
@@ -6,12 +10,15 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
+import yaml
 
 # Define the RNN model
 
 
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, batch_first=True):
+        self.timestamp = datetime.now().strftime("%Y%m%d")
+
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
         self.rnn = nn.RNN(input_size, hidden_size, batch_first=batch_first)
@@ -56,6 +63,7 @@ def init_weights(m):
     if type(m) == nn.Linear:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
+
 
 # Define the training function
 
@@ -114,8 +122,10 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
             nan_positions = torch.nonzero(torch.isnan(inputs), as_tuple=True)
             inf_positions = torch.nonzero(torch.isinf(inputs), as_tuple=True)
 
-            assert not torch.isnan(inputs).any(), f"NaN values found at positions {nan_positions}"
-            assert not torch.isinf(inputs).any(), f"inf values found at positions {inf_positions}"
+            assert not torch.isnan(inputs).any(
+            ), f"NaN values found at positions {nan_positions}"
+            assert not torch.isinf(inputs).any(
+            ), f"inf values found at positions {inf_positions}"
 
             # Note that i is the index of the batch and goes up to num_batches - 1
             inputs, labels = inputs.to(device), labels.to(
@@ -239,3 +249,52 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
     writer.close()
 
     return model
+
+
+def save_model_and_config(model, model_name, timestamp, pickle_path, processed_data_path, config, model_dir, config_dir):
+    """
+    Saves the trained model and configuration settings.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The trained RNN model.
+    model_name : str
+        The name of the model.
+    timestamp : str
+        The timestamp to use in the output file names.
+    pickle_path : str
+        The path to the input data pickle file.
+    processed_data_path : str
+        The path to the processed data pickle file.
+    config : dict
+        The configuration settings for the model.
+    model_dir : pathlib.Path
+        The directory to save the trained model.
+    config_dir : pathlib.Path
+        The directory to save the configuration settings.
+
+    Returns
+    -------
+    None
+    """
+    # Get the hash values of the model and configuration
+    model_hash = hashlib.md5(
+        str(model.state_dict()).encode('utf-8')).hexdigest()
+    config_hash = hashlib.md5(str(config).encode('utf-8')).hexdigest()
+
+    # Check if the model and configuration already exist
+    existing_models = [f.name for f in model_dir.glob("*.pt")]
+    existing_configs = [f.name for f in config_dir.glob("*.yaml")]
+    if f"rnn_model_{model_hash}.pt" in existing_models and f"config_{config_hash}.yaml" in existing_configs:
+        logging.info("Model and configuration already exist. Skipping saving.")
+    else:
+        # Save the trained model
+        model_path = model_dir / \
+            f"{timestamp}_model_{model_hash}_{config_hash}.pt"
+        torch.save(model.state_dict(), model_path)
+
+        # Save the configuration settings
+        config_path = config_dir / f"{timestamp}_config_{config_hash}.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)

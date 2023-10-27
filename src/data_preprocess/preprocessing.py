@@ -29,7 +29,7 @@ class DataPreprocessor:
     -------
     load_data()
         Loads the DataFrame from a pickled file.
-    save_processed_data(input_data, timestamp)
+    save_processed_data()
         Saves the processed data to a pickled file.
     drop_columns(columns_to_drop)
         Drops the specified columns from the DataFrame.
@@ -43,9 +43,11 @@ class DataPreprocessor:
         Adds a new column based on conditions of existing columns.
     handle_infinity_and_na()
         Replaces infinite and NaN values in the DataFrame with NaN.
+    preprocess_data()
+        Performs preprocessing steps on the DataFrame.
     """
 
-    def __init__(self, df=None, pickle_path=None):
+    def __init__(self, df=None, pickle_path=None, raw_data_id: str = "ff-mw"):
         """
         Initializes a new instance of the DataPreprocessor class.
 
@@ -55,10 +57,17 @@ class DataPreprocessor:
             The DataFrame to preprocess.
         pickle_path : str, optional
             The path to a pickled DataFrame to load.
+        raw_data_id : str, optional
+            The name/ID of the raw data.
         """
         self.df = df
         self.pickle_path = pickle_path
-
+        self.raw_data_path = None
+        self.interim_data_path = self.pickle_path
+        self.processed_data_path = None
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+        self.raw_data_id = raw_data_id
+        
     def load_data(self):
         """
         Loads the DataFrame from a pickled file.
@@ -79,16 +88,9 @@ class DataPreprocessor:
             logging.error(f"Error loading data: {e}")
             raise
 
-    def save_processed_data(self, input_data: str, timestamp: str = datetime.now().strftime("%Y%m%d_%H%M")) -> str:
+    def save_processed_data(self) -> str:
         """
         Saves the processed data to a pickled file.
-
-        Parameters
-        ----------
-        input_data : str
-            The name of the input data file.
-        timestamp : str, optional
-            The timestamp to use in the output file name.
 
         Returns
         -------
@@ -97,7 +99,7 @@ class DataPreprocessor:
         """
         try:
             # Create the directory for the processed data if it doesn't exist
-            processed_data_dir = Path(f"data/processed/{input_data}")
+            processed_data_dir = Path(f"data/processed/{self.raw_data_id}")
             processed_data_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate a hash based on DataFrame metadata and some sampling
@@ -107,14 +109,14 @@ class DataPreprocessor:
             logging.info("Processed data hashed.")
 
             # Construct the output file path
-            processed_data_path = processed_data_dir / \
-                f"{timestamp}_processed_data_{processed_data_hash}.pkl"
+            self.processed_data_path = processed_data_dir / \
+                f"{self.timestamp}_processed_data_{processed_data_hash}.pkl"
 
             # Save the processed data to the output file
-            logging.info(f"Saving processed data to {processed_data_path}...")
-            self.df.to_pickle(processed_data_path)
+            logging.info(f"Saving processed data to {self.processed_data_path}...")
+            self.df.to_pickle(self.processed_data_path)
 
-            return str(processed_data_path)
+            return str(self.processed_data_path)
         except Exception as e:
             logging.error(f"Error saving processed data: {e}")
             raise
@@ -232,3 +234,44 @@ class DataPreprocessor:
         except Exception as e:
             logging.error(f"Error handling infinite and NaN values: {e}")
             raise
+
+    def preprocess_data(self):
+        """
+        Performs preprocessing steps on the DataFrame.
+        """
+        self.drop_columns(["plot"])  # Drop the 'plot' column
+        # Calculate the mean of 'ANTdis_1' and 'ANTdis_2' and store it in a new column 'ANTdis'
+        self.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])
+        # Add a new column 'start_walk' with value 'walk_backwards' for rows where the 'walk_backwards' column has value 'walk_backwards'
+        self.add_labels(["walk_backwards", "walk_backwards"], "start_walk")
+        # Replace infinity and NaN values with appropriate values
+        self.handle_infinity_and_na()
+        self.specific_rearrange(
+            "F2Wdis_rate", "F2Wdis"
+        )  # Rearrange the column names
+        self.rearrange_columns(
+            [
+                "Frame",
+                "Fdis",
+                "FdisF",
+                "FdisL",
+                "Wdis",
+                "WdisF",
+                "WdisL",
+                "Fangle",
+                "Wangle",
+                "F2Wdis",
+                "F2Wdis_rate",
+                "F2Wangle",
+                "W2Fangle",
+                "ANTdis",
+                "F2W_blob_dis",
+                "bp_F_delta",
+                "bp_W_delta",
+                "ap_F_delta",
+                "ap_W_delta",
+                "ant_W_delta",
+                "file",
+                "start_walk",
+            ]
+        )  # Rearrange the columns in a specific order
