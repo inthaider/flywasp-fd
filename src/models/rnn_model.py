@@ -12,45 +12,117 @@ import yaml
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 
-# Define the RNN model
-
 
 class RNN(nn.Module):
+    """
+    A class representing the RNN model.
+
+    Parameters
+    ----------
+    input_size : int
+        The number of expected features in the input.
+    hidden_size : int
+        The number of features in the hidden state.
+    output_size : int
+        The number of output features.
+    batch_first : bool, optional
+        If True, then the input and output tensors are provided as (batch, seq, feature).
+        Default is True.
+    """
     def __init__(self, input_size, hidden_size, output_size, batch_first=True):
+        """
+        Initialize the RNN model.
+
+        Parameters
+        ----------
+        input_size : int
+            The number of expected features in the input.
+        hidden_size : int
+            The number of features in the hidden state.
+        output_size : int
+            The number of output features.
+        batch_first : bool, optional
+            If True, then the input and output tensors are provided as (batch, seq, feature).
+            Default is True.
+        """
+        # Get the current timestamp as a string in the format YYYYMMDD
         self.timestamp = datetime.now().strftime("%Y%m%d")
 
+        # Call the __init__ method of the parent class (nn.Module)
         super(RNN, self).__init__()
+
+        # Set the hidden_size attribute of the RNN object
         self.hidden_size = hidden_size
+
+        # Create an RNN layer with the specified input_size, hidden_size, and batch_first parameters
         self.rnn = nn.RNN(input_size, hidden_size, batch_first=batch_first)
+
+        # Create a linear layer with the specified hidden_size and output_size parameters
         self.fc = nn.Linear(hidden_size, output_size)
+
+        # Create a sigmoid activation function
         self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        h0 = torch.zeros(1, x.size(0), self.hidden_size)
-        out, _ = self.rnn(x, h0)
-        out = self.fc(out[:, -1, :])
-        out = self.sigmoid(out)
-        return out
-
-# Define the dataset class
 
 
 class WalkDataset(Dataset):
+    """
+    A class representing the dataset.
+
+    Parameters
+    ----------
+    X : numpy.ndarray
+        The input data.
+    Y : numpy.ndarray
+        The target data.
+    """
     def __init__(self, X, Y):
+        """
+        Initialize the dataset.
+
+        Parameters
+        ----------
+        X : numpy.ndarray
+            The input data.
+        Y : numpy.ndarray
+            The target data.
+        """
+        # Convert the input and target data to PyTorch tensors
         self.X = torch.from_numpy(X).float()
         self.Y = torch.from_numpy(Y).long()
 
     def __len__(self):
+        """
+        Returns the length of the dataset.
+
+        Returns
+        -------
+        int
+            The length of the dataset.
+        """
+        # Return the length of the input data
         return len(self.X)
 
     def __getitem__(self, idx):
-        return self.X[idx], self.Y[idx]
+        """
+        Returns the item at the given index.
 
-# For weight initialization
+        Parameters
+        ----------
+        idx : int
+            The index of the item to return.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the input and target data.
+        """
+        # Return a tuple containing the input and target data at the given index
+        return self.X[idx], self.Y[idx]
 
 
 def init_weights(m):
-    """Optional function for weight initialization.
+    """
+    Optional function for weight initialization.
 
     Uses Xavier uniform initialization for weights and constant initialization
     for biases.
@@ -60,14 +132,51 @@ def init_weights(m):
     m : torch.nn.Module
         The module to initialize. Only applies to Linear layers.
     """
+    # If the module is a linear layer, initialize the weights with Xavier uniform initialization
+    # and the biases with a constant value of 0.01
     if type(m) == nn.Linear:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
 
-
-# Define the training function
-
 def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=True, prints_per_epoch=10):
+    """
+    Trains the RNN model.
+
+    Parameters
+    ----------
+    X_train : numpy.ndarray
+        The training input data.
+    Y_train : numpy.ndarray
+        The training target data.
+    X_test : numpy.ndarray
+        The testing input data.
+    Y_test : numpy.ndarray
+        The testing target data.
+    input_size : int
+        The number of expected features in the input.
+    hidden_size : int
+        The number of features in the hidden state.
+    output_size : int
+        The number of output features.
+    num_epochs : int
+        The number of epochs to train the model.
+    batch_size : int
+        The batch size.
+    learning_rate : float
+        The learning rate.
+    device : str
+        The device to use for training.
+    batch_first : bool, optional
+        If True, then the input and output tensors are provided as (batch, seq, feature).
+        Default is True.
+    prints_per_epoch : int, optional
+        The number of times to print the loss per epoch. Default is 10.
+
+    Returns
+    -------
+    torch.nn.Module
+        The trained RNN model.
+    """
     # Create the dataset and data loader
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
