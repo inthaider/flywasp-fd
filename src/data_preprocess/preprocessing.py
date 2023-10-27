@@ -225,11 +225,11 @@ class DataPreprocessor:
             # Replace infinite values with NaN
             self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
-            # Forward fill NaN values
-            self.df.fillna(method='ffill', inplace=True)
+            # # Forward fill NaN values
+            # self.df.fillna(method='ffill', inplace=True)
 
-            # Backward fill any remaining NaN values
-            self.df.fillna(method='bfill', inplace=True)
+            # # Backward fill any remaining NaN values
+            # self.df.fillna(method='bfill', inplace=True)
 
         except Exception as e:
             logging.error(f"Error handling infinite and NaN values: {e}")
@@ -275,3 +275,9 @@ class DataPreprocessor:
                 "start_walk",
             ]
         )  # Rearrange the columns in a specific order
+
+        # print the shape of the dataframe and its columns
+        print(f"Shape of the dataframe: {self.df.shape}")
+        print(f"Columns of the dataframe: {self.df.columns}")
+
+        return self.df

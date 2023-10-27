@@ -59,7 +59,9 @@ class RNNDataPrep:
         # Perform preprocessing steps
         logging.info("Performing preprocessing steps...")
         df = self.preprocessor.preprocess_data()
-
+        if df is None:
+            raise ValueError("DataFrame 'df' is None after preprocessing!!??!!")
+        
         # Perform feature engineering steps
         logging.info("Performing feature engineering steps...")
         self.feature_engineer = FeatureEngineer(df)
