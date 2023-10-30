@@ -246,7 +246,10 @@ def evaluate(model, val_loader, criterion, device):
             all_labels.extend(labels.cpu().numpy())
             
     f1 = f1_score(all_labels, all_preds)
+    print("Training Data Distribution:")
     print(pd.Series(all_labels).value_counts().to_dict())
+    
+    print("Predicted Data Distribution:")
     print(pd.Series(all_preds).value_counts().to_dict())
     return running_loss / len(val_loader), correct / total, f1
 
