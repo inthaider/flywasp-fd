@@ -220,7 +220,7 @@ def train(model, train_loader, criterion, optimizer, device):
     return running_loss / len(train_loader)
 
 # Define the evaluation function
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, precision_recall_curve, auc
 #all_preds = []
 #all_labels = []
 def evaluate(model, val_loader, criterion, device):
@@ -246,12 +246,14 @@ def evaluate(model, val_loader, criterion, device):
             all_labels.extend(labels.cpu().numpy())
             
     f1 = f1_score(all_labels, all_preds)
+    prec, rec, _ = precision_recall_curve(all_labels, all_preds)
+    pr_auc = auc(rec, prec)
     print("Training Data Distribution:")
     print(pd.Series(all_labels).value_counts().to_dict())
     
     print("Predicted Data Distribution:")
     print(pd.Series(all_preds).value_counts().to_dict())
-    return running_loss / len(val_loader), correct / total, f1
+    return running_loss / len(val_loader), correct / total, f1, pr_auc
 
 # Set the device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -259,22 +261,33 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 ############ Training Process ######################
 # Create the dataset and data loader
-train_dataset = WalkDataset(X_train_resampled, Y_train_resampled)
+train_dataset = WalkDataset(X_train, Y_train)
 test_dataset = WalkDataset(X_test, Y_test)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 # Define the model, loss function, and optimizer
-model = RNN(input_size=X_train_resampled.shape[2], hidden_size=64, output_size=2).to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+model = RNN(input_size=X_train.shape[2], hidden_size=64, output_size=2).to(device)
+
+# Calculating weights for class imbalance to pass to the loss function
+class_counts = [pd.Series(Y_train).value_counts()[0], pd.Series(Y_train).value_counts()[1]]
+
+# Compute class weights
+weights = 1. / torch.tensor(class_counts, dtype=torch.float)
+weights = weights / weights.sum()
+
+criterion = nn.CrossEntropyLoss(weight=weights)
+optimizer = optim.SGD(model.parameters(), lr=0.0001)
 
 # Train the model
+from torch.optim.lr_scheduler import CosineAnnealingLR
+scheduler = CosineAnnealingLR(optimizer, T_max=50)
 num_epochs = 10
 for epoch in range(num_epochs):
     train_loss = train(model, train_loader, criterion, optimizer, device)
-    test_loss, test_acc, test_f1 = evaluate(model, test_loader, criterion, device)
-    print(f'Epoch {epoch+1}/{num_epochs}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, Test F1: {test_f1:.4f}')
+    test_loss, test_acc, test_f1, test_pr_auc = evaluate(model, test_loader, criterion, device)
+    scheduler.step(test_loss)
+    print(f'Epoch {epoch+1}/{num_epochs}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, Test F1: {test_f1:.4f}, Test PR AUC: {test_pr_auc:.4f}')
 
 
 
