@@ -104,7 +104,7 @@ test_indices = []
 for i, file in enumerate(files):
     print(i, file)
     file_df = df[df['file'] == file]
-    file_data = df[df['file'] == file].drop(['Frame', 'file'], axis=1).values
+    file_data = file_df.drop(['Frame', 'file'], axis=1).values
     
     # Create sequences for each file
     x, y, idx = create_sequences(file_data, start_index=file_df.index.min())
@@ -253,11 +253,15 @@ def evaluate(model, val_loader, criterion, device):
             
             #print(outputs.data, torch.max(outputs.data,1))
             
+            probabilities = F.softmax(outputs, dim=1)
+            prob_of_class_1 = probabilities[:, 1]
+            
             all_preds.extend(predicted.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
+            all_preds_probs.extend(prob_of_class_1.cpu().numpy())
             
     f1 = f1_score(all_labels, all_preds)
-    prec, rec, _ = precision_recall_curve(all_labels, all_preds)
+    prec, rec, _ = precision_recall_curve(all_labels, all_preds_probs)
     pr_auc = auc(rec, prec)
     print("Training Data Distribution:")
     print(pd.Series(all_labels).value_counts().to_dict())
@@ -306,6 +310,7 @@ import torch.nn.functional as F
 all_preds = []
 all_preds_probs = []
 all_labels = []
+model.eval()
 with torch.no_grad():
     for i, (inputs, labels) in enumerate(test_loader):
         inputs, labels = inputs.to(device), labels.to(device)
@@ -404,14 +409,6 @@ plt.show()  # Display the plot)
 
 
 ### Debugging
-print(pd.Series(all_labels).value_counts().to_dict())
-print(pd.Series(all_preds).value_counts().to_dict())
-    
-print(test_rnn_output[0])
-print(test_nnl_output[0])
-print(test_sigmoid_output[0])
-
-
 
 
 
