@@ -370,8 +370,10 @@ class DataPreprocessor:
             self.save_processed_data()
 
         # Print the shape of the dataframe and its columns using the print module.
-        print(f"Shape of the dataframe: {self.df.shape}")
-        print(f"Columns of the dataframe: {self.df.columns}")
+        print(
+            f"\nDataPreprocessor.preprocess_data --> Shape of the dataframe: {self.df.shape}")
+        print(
+            f"DataPreprocessor.preprocess_data --> Columns of the dataframe: {self.df.columns}\n")
 
         # Add logging statements to indicate the end of preprocessing as part of the DataPreprocessor class
         logging.info("Preprocessing complete (in DataPreprocessor class).\n\n")
