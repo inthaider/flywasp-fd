@@ -78,6 +78,10 @@ class FeatureEngineer:
         """
         Performs feature engineering steps on the DataFrame.
         """
+        # Logging the start of the feature engineering step
+        logging.info("\n\nEngineering features (in FeatureEngineer class)...")
+
+        # Standardize the selected features
         self.standardize_features(
             [
                 "Fdis",
@@ -100,7 +104,11 @@ class FeatureEngineer:
                 "ap_W_delta",
                 "ant_W_delta",
             ]
-        )  # Standardize the selected features
+        )
         # Perform additional feature engineering steps here
         # ...
+
+        # Logging the end of the feature engineering step
+        logging.info(
+            "Finished engineering features (in FeatureEngineer class).\n\n")
         return self.df
