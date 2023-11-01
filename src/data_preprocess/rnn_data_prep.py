@@ -53,7 +53,7 @@ class RNNDataPrep:
         The DataPreprocessor object used to preprocess the raw data.
     feature_engineer : FeatureEngineer
         The FeatureEngineer object used to engineer features from the preprocessed data.
-        
+
     Methods
     -------
     load_and_preprocess_data(save_data)
@@ -123,7 +123,7 @@ class RNNDataPrep:
         """
         # Logging messages to indicate the start of the function
         logging.info(
-            "\nLoading & preprocessing raw/interim data to be prepared for RNN...")
+            "\nLoading & preprocessing raw/interim data to be prepared for RNN in RNNDataPrep -> load_and_preprocess_data...")
 
         # Set the value of self.save_data to the value of save_data if save_data is not None
         if save_data is not None:
@@ -153,7 +153,7 @@ class RNNDataPrep:
 
         # Logging messages to indicate the end of the function
         logging.info(
-            "Data loading, preprocessing, and feature engineering completed.\n")
+            "Data loading, preprocessing, and feature engineering completed in RNNDataPrep -> load_and_preprocess_data.\n")
         return df
 
     def prepare_rnn_data(self, df: pd.DataFrame, sequence_length: int = 3, split_ratio: float = 2/3, rand_oversample: bool = False, save_train_test: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -179,7 +179,8 @@ class RNNDataPrep:
             The train-test splits as (X_train, Y_train, X_test, Y_test).
         """
         # Logging messages to indicate the start of the function
-        logging.info("\nPreparing sequences and train-test splits for RNN...")
+        logging.info(
+            "\nPreparing sequences and train-test splits for RNN in RNNDataPrep -> prepare_rnn_data...")
 
         # Set the value of self.save_train_test to the value of save_train_test if save_data is not None
         if save_train_test is not None:
@@ -202,7 +203,7 @@ class RNNDataPrep:
 
         # Logging messages to indicate the end of the function
         logging.info(
-            "Sequences and train-test splits prepared successfully.\n")
+            "Sequences and train-test splits prepared successfully in RNNDataPrep -> prepare_rnn_data.\n")
         return X_train, Y_train, X_test, Y_test
 
     def get_rnn_data(self, load_train_test: bool = False, sequence_length: int = 3, split_ratio: float = 2/3, save_train_test: bool = None, save_data: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -228,8 +229,9 @@ class RNNDataPrep:
             The train-test splits as (X_train, Y_train, X_test, Y_test).
         """
         # Logging messages to indicate the start of the function
-        logging.info("\n\nGetting RNN train & test datasets...")
-        logging.info(f"\tThe steps are:- \nif load_train_test=True, (1) Load existing train/test data; \nELSE, (1) Load and preprocess raw/interim data, (2) Prepare RNN train & test datasets from the preprocessed data, (3) Save the train & test datasets (if save_train_test = True).")
+        logging.info(
+            "\n\nGet RNN train & test datasets (in RNNDataPrep class)...")
+        logging.info(f"\tThe steps are:- \n\t\tif load_train_test=True, (1) Load existing train/test data; \n\t\tELSE, (1) Load and preprocess raw/interim data, (2) Prepare RNN train & test datasets from the preprocessed data, (3) Save the train & test datasets (if save_train_test = True).")
 
         # Set the values of self.save_train_test and self.save_data to the values of save_train_test and save_data if they are not None
         if save_train_test is not None:
@@ -238,24 +240,29 @@ class RNNDataPrep:
             self.save_data = save_data
 
         if load_train_test:
-            logging.info("Loading preprocessed train & test datasets...")
+            logging.info(
+                "Load preprocessed train & test datasets in RNNDataPrep -> get_rnn_data() ...")
             self.train_test_data_dir = Path(
                 f'{self.train_test_data_par_dir}/fd_v0')
             X_train, Y_train, X_test, Y_test = self._load_train_test_data()
-            logging.info("Train & test datasets loaded successfully.")
+            logging.info(
+                "Train & test datasets loaded successfully in RNNDataPrep -> get_rnn_data().")
         else:
             logging.info(
-                "Loading raw/interim data to be preprocessed/prepared...")
+                "Load raw/interim data to be preprocessed/prepared in RNNDataPrep -> get_rnn_data() ...")
             df = self.load_and_preprocess_data()
-            logging.info("Raw/interim data loaded successfully.")
             logging.info(
-                "Preparing RNN train & test datasets from raw/interim data.")
+                "Raw/interim data loaded successfully in RNNDataPrep -> get_rnn_data().")
+            logging.info(
+                "Prepare RNN train & test datasets from raw/interim data in RNNDataPrep -> get_rnn_data() ...")
             X_train, Y_train, X_test, Y_test = self.prepare_rnn_data(
                 df, sequence_length=sequence_length, split_ratio=split_ratio)
-            logging.info("Train & test datasets prepared successfully.")
+            logging.info(
+                "Train & test datasets prepared successfully in RNNDataPrep -> get_rnn_data().")
 
         # Logging messages to indicate the end of the function
-        logging.info("RNN train & test datasets retrieved successfully.\n\n")
+        logging.info(
+            "RNN train & test datasets retrieved successfully in RNNDataPrep -> get_rnn_data().\n\n")
         return X_train, Y_train, X_test, Y_test
 
     def _prep_train_test_seqs(self, df: pd.DataFrame, sequence_length: int, split_ratio: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -276,75 +283,74 @@ class RNNDataPrep:
         Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
             The train-test splits as (X_train, Y_train, X_test, Y_test).
         """
-        # Logging messages to indicate the start of the function
-        logging.info("\nStarting to prepare train and test sequences...")
+        logging.info(
+            "\nStarting to prepare train and test sequences in RNNDataPrep -> _prep_train_test_seqs...")
 
         # Initial checks and setup
-        if not isinstance(df, pd.DataFrame):
-            raise TypeError("df must be a pandas DataFrame.")
-        if not isinstance(sequence_length, int):
-            raise TypeError("sequence_length must be an integer.")
-        if not isinstance(split_ratio, float):
-            raise TypeError("split_ratio must be a float.")
-        if not (0 < split_ratio < 1):
-            raise ValueError("split_ratio must be between 0 and 1.")
+        assert isinstance(df, pd.DataFrame), "df must be a pandas DataFrame."
+        assert isinstance(
+            sequence_length, int), "sequence_length must be an integer."
+        assert isinstance(split_ratio, float), "split_ratio must be a float."
+        assert 0 < split_ratio < 1, "split_ratio must be between 0 and 1."
 
-        logging.info("Initial checks and setup completed.")
+        logging.debug("Initial checks and setup completed.")
 
-        logging.info("Converting DataFrame to NumPy array...")
-        # Convert the DataFrame to a NumPy array for faster slicing
-        df_values = df.values
-        logging.info("Converted DataFrame to NumPy array.")
+        logging.debug("Converting DataFrame to NumPy array...")
 
-        # Create empty lists to collect the sequences
-        logging.info("Initializing empty arrays for collecting sequences...")
-        X_train, Y_train = [], []
-        X_test, Y_test = [], []
+        # Convert DataFrame to NumPy array after dropping unnecessary columns
+        df_values = df.drop(['Frame', 'file'], axis=1).values
+        file_column = df['file'].values
+
+        logging.debug("Converted DataFrame to NumPy array.")
+
+        logging.debug("Calculating sizes in advance for pre-allocation...")
 
         # Calculate sizes in advance for pre-allocation
-        logging.info("Calculating sizes in advance for pre-allocation...")
         unique_files = df['file'].unique()
-        total_sequences = sum(
-            len(df[df['file'] == file]) - sequence_length for file in unique_files)
+        file_lengths = df['file'].value_counts().values
+        total_sequences = np.sum(file_lengths - sequence_length)
         train_size = int(total_sequences * split_ratio)
         test_size = total_sequences - train_size
+
         logging.info(
             f"Calculated train_size: {train_size}, test_size: {test_size}")
 
-        # Pre-allocate numpy arrays
-        logging.info("Pre-allocating numpy arrays...")
-        # -2 because we're dropping 'Frame' and 'file'
+        logging.debug("Pre-allocating numpy arrays...")
+
+        # Pre-allocate NumPy arrays
+        # -2 because we've dropped 'Frame' and 'file'
         input_dim = df.shape[1] - 2
-        # -1 because we're dropping the target column in the X data
-        X_train = np.zeros((train_size, sequence_length, input_dim-1))
+        X_train = np.zeros((train_size, sequence_length, input_dim - 1))
         Y_train = np.zeros(train_size)
-        # -1 because we're dropping the target column in the X data
-        X_test = np.zeros((test_size, sequence_length, input_dim-1))
+        X_test = np.zeros((test_size, sequence_length, input_dim - 1))
         Y_test = np.zeros(test_size)
-        logging.info("Pre-allocated NumPy arrays for train and test sets.")
+
+        logging.debug("Pre-allocated NumPy arrays for train and test sets.")
 
         train_idx, test_idx = 0, 0
+        for i, (file, file_length) in enumerate(zip(unique_files, file_lengths)):
+            print(f"===================")
+            print(f"Fly-wasp pair # {i}")
+            print(f"Processing file {file}...")
 
-        i = 0
-        for file in unique_files:
-            logging.info(f"===================")
-            logging.info(f"Fly-wasp pair # {i}")
-            logging.info(f"Processing file {file}...")
-            file_data = df[df['file'] == file].drop(
-                ['Frame', 'file'], axis=1).values
+            # Use NumPy-based filtering for file_data
+            file_data = df_values[file_column == file]
 
-            # Create sequences for each file
-            logging.info("Creating sequences for the current file...")
+            logging.debug("Creating sequences for the current file...")
+
             x, y = self._create_seqs(
                 file_data, sequence_length=sequence_length)
 
             # Calculate the split index for this file
-            n = len(x)
+            n = len(x)  # equal to file_length - sequence_length
+            # number of training sequences
             file_train_size = int(n * split_ratio)
+
             logging.info(f"Calculated file_train_size: {file_train_size}")
 
+            logging.debug("Adding sequences to pre-allocated arrays...")
+
             # Add the sequences to the pre-allocated arrays
-            logging.info("Adding sequences to pre-allocated arrays...")
             X_train[train_idx:train_idx +
                     file_train_size] = x[:file_train_size]
             Y_train[train_idx:train_idx +
@@ -354,25 +360,25 @@ class RNNDataPrep:
             Y_test[test_idx:test_idx + n -
                    file_train_size] = y[file_train_size:]
 
-            # Check X array shapes to see if they match the expected sizes (use logging) in one line (using f-strings and :> formatting)
-            logging.info(
-                f"X_train shape: {X_train.shape:>10}, X_test shape: {X_test.shape:>10}")
-
-            # # Drop the target column from the input sequences
-            # logging.info("Dropping the target column from input sequences...")
-            # X_train = X_train[:, :, :-1]
-            # X_test = X_test[:, :, :-1]
+            # Check X array shapes
+            logging.debug(
+                f"X_train shape: {str(X_train.shape):>10}, X_test shape: {str(X_test.shape):>10}")
+            # Check Y array shapes
+            logging.debug(
+                f"Y_train shape: {str(Y_train.shape):>10}, Y_test shape: {str(Y_test.shape):>10}")
 
             # Update the indices for the next iteration
-            logging.info("Updating the indices for the next iteration...")
             train_idx += file_train_size
             test_idx += n - file_train_size
 
-            i = i + 1
+        print(f"===================")
 
         logging.info(
-            f"Prepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
-        logging.info("Train and test sequence preparation completed.\n")
+            f"\nPrepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
+
+        logging.info(
+            "Train and test sequence preparation completed in RNNDataPrep -> _prep_train_test_seqs.\n")
+
         return X_train, Y_train, X_test, Y_test
 
     def _create_seqs(self, data: np.ndarray, sequence_length: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -407,9 +413,9 @@ class RNNDataPrep:
 
         valid_idx = 0
         for i in range(n):
+            target = data[i + sequence_length, -1]
             # -1 because we're dropping the target column in the X sequences
             sequence = data[i:i + sequence_length, :-1]
-            target = data[i + sequence_length, -1]
 
             # Check if there are any missing values in the sequence or target
             if not np.isnan(sequence).any() and not np.isnan(target):
