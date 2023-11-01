@@ -1,14 +1,11 @@
-from datetime import datetime
-
 import hashlib
 import logging
 import pickle
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-import logging
 
 from src.data_preprocess.feature_engineering import FeatureEngineer
 from src.data_preprocess.preprocessing import DataPreprocessor
@@ -29,11 +26,6 @@ def get_hash(obj):
         The hash value of the object as a string.
     """
     return hashlib.sha256(str(obj).encode()).hexdigest()
-
-
-
-
-
 
 
 def create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path=None, interim_data_path=None, processed_data_path=None, logging_level='INFO', logging_format='%(asctime)s - %(levelname)s - %(message)s'):
@@ -61,12 +53,6 @@ def create_config_dict(model_name, input_size, hidden_size, output_size, num_epo
         'processed_data_path': processed_data_path
     }
     return config
-
-
-
-
-
-
 
 
 ############

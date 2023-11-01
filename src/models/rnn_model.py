@@ -309,7 +309,8 @@ def train_loop(model, batch_size, device, prints_per_epoch, train_loader, criter
     # Calculate F1 score for training data
     train_f1 = f1_score(true_labels, pred_labels)
 
-    print(f"\nTrain Performance: \n Avg loss: {train_loss:>8f}, F1 Score: {train_f1:.4f} \n")
+    print(
+        f"\nTrain Performance: \n Avg loss: {train_loss:>8f}, F1 Score: {train_f1:.4f} \n")
 
     return train_loss, train_f1
 
@@ -353,18 +354,18 @@ def test_loop(model, device, test_loader, criterion):
         for i, (inputs, labels) in enumerate(test_loader):
             inputs, labels = inputs.to(device), labels.to(
                 device)  # Move tensors to device, e.g. GPU
-            
+
             outputs = model(inputs)  # Forward pass
 
             loss = criterion(outputs, labels)  # Compute loss
             running_loss += loss.item()  # Accumulate loss
             _, predicted = torch.max(
                 outputs.data, 1)  # Get predicted class
-            
+
             total += labels.size(0)  # Accumulate total number of samples
             # Accumulate number of correct predictions
             correct += (predicted == labels).sum().item()
-            
+
             # Accumulate true and predicted labels for F1 score calculation
             true_labels.extend(labels.cpu().numpy())
             pred_labels.extend(predicted.cpu().numpy())
@@ -381,7 +382,7 @@ def test_loop(model, device, test_loader, criterion):
     return test_loss, test_acc, test_f1
 
 
-def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=True, prints_per_epoch=10):
+def train_eval_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=True, prints_per_epoch=10):
     """
     Trains the RNN model.
 
@@ -436,10 +437,11 @@ def train_rnn_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, o
         print(f"Epoch {epoch+1}/{num_epochs}\n-------------------------------")
         # Train the model
         train_loss, train_f1 = train_loop(model, batch_size, device,
-                                prints_per_epoch, train_loader, criterion, optimizer, epoch)
+                                          prints_per_epoch, train_loader, criterion, optimizer, epoch)
 
         # Evaluate/Test the model
-        test_loss, test_acc, test_f1 = test_loop(model, device, test_loader, criterion)
+        test_loss, test_acc, test_f1 = test_loop(
+            model, device, test_loader, criterion)
 
         # print(
         #     f'Epoch {epoch+1}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')

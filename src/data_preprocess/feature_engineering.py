@@ -73,7 +73,7 @@ class FeatureEngineer:
             logging.error(
                 f"An error occurred while standardizing features: {e}")
             raise e
-        
+
     def engineer_features(self):
         """
         Performs feature engineering steps on the DataFrame.

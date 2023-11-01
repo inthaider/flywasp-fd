@@ -11,12 +11,8 @@ import yaml
 from data_preprocess.feature_engineering import FeatureEngineer
 from data_preprocess.preprocessing import DataPreprocessor
 from data_preprocess.rnn_data_prep import RNNDataPrep
-
-from models.rnn_model import train_rnn_model
-from models.rnn_model import save_model_and_config
-
-from utils.utilities import (create_config_dict, get_hash)
-
+from models.rnn_model import save_model_and_config, train_eval_model
+from utils.utilities import create_config_dict, get_hash
 
 
 def main():
@@ -75,8 +71,8 @@ def main():
     learning_rate = 0.001
     batch_first = True
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = train_rnn_model(X_train, Y_train, X_test, Y_test, input_size,
-                        hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=batch_first)
+    model = train_eval_model()(X_train, Y_train, X_test, Y_test, input_size,
+                               hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=batch_first)
 
     # Create the model name
     model_architecture = "rnn"
