@@ -9,6 +9,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader, Dataset
 
+logger = logging.getLogger(__name__)
 
 class RNN(nn.Module):
     """

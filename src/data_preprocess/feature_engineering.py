@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
+logger = logging.getLogger(__name__)
 
 class FeatureEngineer:
     """

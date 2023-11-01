@@ -10,6 +10,7 @@ import pandas as pd
 from src.data_preprocess.feature_engineering import FeatureEngineer
 from src.data_preprocess.preprocessing import DataPreprocessor
 
+logger = logging.getLogger(__name__)
 
 def get_hash(obj):
     """

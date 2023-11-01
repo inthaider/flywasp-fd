@@ -11,6 +11,7 @@ from src.models.helpers_rnn import (debug_grad_nan_inf, debug_input_nan_inf,
                                     debug_loss_nan_inf, debug_sumsq_grad_param)
 from src.models.rnn_model import configure_model, data_loaders
 
+logger = logging.getLogger(__name__)
 
 def train_eval_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, device, batch_first=True, prints_per_epoch=10):
     """

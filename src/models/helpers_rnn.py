@@ -7,6 +7,7 @@ import torch
 import yaml
 from matplotlib import pyplot as plt
 
+logger = logging.getLogger(__name__)
 
 def plot_predicted_probabilities(df, test_indices, test_labels_and_probs):
     """

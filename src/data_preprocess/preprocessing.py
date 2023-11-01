@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
 
 class DataPreprocessor:
     """
@@ -294,7 +295,7 @@ class DataPreprocessor:
 
             # df.reset_index(drop=True) resets the index of the dataframe to the default index (0, 1, 2, ...)
             # we do this because the index of the dataframe is not continuous after dropping rows
-            df = df.reset_index(drop=True)
+            self.df = self.df.reset_index(drop=True)
 
             # # Forward fill NaN values
             # self.df.fillna(method='ffill', inplace=True)
