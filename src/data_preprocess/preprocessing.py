@@ -282,12 +282,19 @@ class DataPreprocessor:
     def handle_infinity_and_na(self):
         """
         Replaces infinite and NaN values in the DataFrame with forward/backward filled values.
+
+        TODO: Do we need the df.reset_index(drop=True) line?
+        TODO: Implement forward and backward filling.
         """
         try:
             logging.info("Handling infinite and NaN values...")
 
             # Replace infinite values with NaN
             self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
+
+            # df.reset_index(drop=True) resets the index of the dataframe to the default index (0, 1, 2, ...)
+            # we do this because the index of the dataframe is not continuous after dropping rows
+            df = df.reset_index(drop=True)
 
             # # Forward fill NaN values
             # self.df.fillna(method='ffill', inplace=True)
