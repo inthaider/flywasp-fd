@@ -1,3 +1,9 @@
+"""
+Old Jupyter notebook code by Faizan.
+
+Not sure when this was written, but around early October.
+"""
+
 # %%
 # Load packages
 import pandas as pd

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Oct 16 14:18:48 2023
+DATE LAST MODIFIED: 2023-10-25
 
 @author: Faizan
+
+Latest version of FD's code for RNN implementation, for REFERENCE.
 """
 
 # Load packages
@@ -13,8 +16,8 @@ import warnings
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import scipy.stats as stats
-from docx import Document
-from docx.shared import Inches
+# from docx import Document
+# from docx.shared import Inches
 from datetime import datetime
 import time
 
@@ -278,8 +281,8 @@ for epoch in range(num_epochs):
 
 
 ### Debugging
-print(pd.Series(all_labels).value_counts().to_dict())
-print(pd.Series(all_preds).value_counts().to_dict())
+# print(pd.Series(all_labels).value_counts().to_dict())
+# print(pd.Series(all_preds).value_counts().to_dict())
     
 print(test_rnn_output[0])
 print(test_nnl_output[0])

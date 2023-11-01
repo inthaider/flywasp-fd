@@ -24,6 +24,8 @@ class FeatureEngineer:
     -------
     standardize_features(columns_to_scale)
         Standardizes the specified columns in the DataFrame.
+    engineer_features()
+        Performs feature engineering steps on the DataFrame.
     """
 
     def __init__(self, df=None):
@@ -71,3 +73,42 @@ class FeatureEngineer:
             logging.error(
                 f"An error occurred while standardizing features: {e}")
             raise e
+
+    def engineer_features(self):
+        """
+        Performs feature engineering steps on the DataFrame.
+        """
+        # Logging the start of the feature engineering step
+        logging.info("\n\nEngineering features (in FeatureEngineer class)...")
+
+        # Standardize the selected features
+        self.standardize_features(
+            [
+                "Fdis",
+                "FdisF",
+                "FdisL",
+                "Wdis",
+                "WdisF",
+                "WdisL",
+                "Fangle",
+                "Wangle",
+                "F2Wdis",
+                "F2Wdis_rate",
+                "F2Wangle",
+                "W2Fangle",
+                "ANTdis",
+                "F2W_blob_dis",
+                "bp_F_delta",
+                "bp_W_delta",
+                "ap_F_delta",
+                "ap_W_delta",
+                "ant_W_delta",
+            ]
+        )
+        # Perform additional feature engineering steps here
+        # ...
+
+        # Logging the end of the feature engineering step
+        logging.info(
+            "Finished engineering features (in FeatureEngineer class).\n\n")
+        return self.df
