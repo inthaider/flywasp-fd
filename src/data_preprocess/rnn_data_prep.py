@@ -106,6 +106,7 @@ class RNNDataPrep:
         self.raw_data_id = None
         self.preprocessor = None
         self.feature_engineer = None
+        self.test_indices = None
 
     def load_and_preprocess_data(self, save_data: bool = None) -> pd.DataFrame:
         """
@@ -155,56 +156,6 @@ class RNNDataPrep:
         logging.info(
             "Data loading, preprocessing, and feature engineering completed in RNNDataPrep -> load_and_preprocess_data.\n")
         return df
-
-    def prepare_rnn_data(self, df: pd.DataFrame, sequence_length: int = 3, split_ratio: float = 2/3, rand_oversample: bool = False, save_train_test: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Prepares the train and test datasets for the RNN model.
-
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            The DataFrame to use for preparing the train and test datasets.
-        sequence_length : int, optional
-            The length of the sequences to create. Defaults to 3.
-        split_ratio : float, optional
-            The ratio of training to testing data. Defaults to 2/3.
-        rand_oversample : bool, optional
-            Whether to perform random oversampling to balance the class distribution. Defaults to False.
-        save_train_test : bool, optional
-            Whether to save the train and test datasets as .pkl files. Defaults to None, in which case the value of self.save_train_test is used.
-
-        Returns
-        -------
-        Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
-            The train-test splits as (X_train, Y_train, X_test, Y_test).
-        """
-        # Logging messages to indicate the start of the function
-        logging.info(
-            "\nPreparing sequences and train-test splits for RNN in RNNDataPrep -> prepare_rnn_data...")
-
-        # Set the value of self.save_train_test to the value of save_train_test if save_data is not None
-        if save_train_test is not None:
-            self.save_train_test = save_train_test
-
-        # Prepare sequences and train-test splits
-        X_train, Y_train, X_test, Y_test = self._prep_train_test_seqs(
-            df, sequence_length=sequence_length, split_ratio=split_ratio)
-
-        # Perform Random Oversampling if rand_oversample is True
-        if rand_oversample:
-            X_train, Y_train = self._perform_random_oversampling(
-                X_train, Y_train)
-
-        # Save the train-test splits if self.save_train_test is True
-        if self.save_train_test:
-            logging.info("Saving train-test splits...")
-            rnn_data_path = self._save_train_test_data(
-                X_train, Y_train, X_test, Y_test)
-
-        # Logging messages to indicate the end of the function
-        logging.info(
-            "Sequences and train-test splits prepared successfully in RNNDataPrep -> prepare_rnn_data.\n")
-        return X_train, Y_train, X_test, Y_test
 
     def get_rnn_data(self, load_train_test: bool = False, sequence_length: int = 3, split_ratio: float = 2/3, save_train_test: bool = None, save_data: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -265,6 +216,62 @@ class RNNDataPrep:
             "RNN train & test datasets retrieved successfully in RNNDataPrep -> get_rnn_data().\n\n")
         return X_train, Y_train, X_test, Y_test
 
+    def prepare_rnn_data(self, df: pd.DataFrame, sequence_length: int = 3, split_ratio: float = 2/3, rand_oversample: bool = False, save_train_test: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Prepares the train and test datasets for the RNN model.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The DataFrame to use for preparing the train and test datasets.
+        sequence_length : int, optional
+            The length of the sequences to create. Defaults to 3.
+        split_ratio : float, optional
+            The ratio of training to testing data. Defaults to 2/3.
+        rand_oversample : bool, optional
+            Whether to perform random oversampling to balance the class distribution. Defaults to False.
+        save_train_test : bool, optional
+            Whether to save the train and test datasets as .pkl files. Defaults to None, in which case the value of self.save_train_test is used.
+
+        Returns
+        -------
+        X_train : numpy.ndarray
+            The training input sequences.
+        Y_train : numpy.ndarray
+            The training target values.
+        X_test : numpy.ndarray
+            The testing input sequences.
+        Y_test : numpy.ndarray
+            The testing target values.
+        """
+        # Logging messages to indicate the start of the function
+        logging.info(
+            "\nPreparing sequences and train-test splits for RNN in RNNDataPrep -> prepare_rnn_data...")
+
+        # Set the value of self.save_train_test to the value of save_train_test if save_data is not None
+        if save_train_test is not None:
+            self.save_train_test = save_train_test
+
+        # Prepare sequences and train-test splits
+        X_train, Y_train, X_test, Y_test, _ = self._prep_train_test_seqs(
+            df, sequence_length=sequence_length, split_ratio=split_ratio)
+
+        # Perform Random Oversampling if rand_oversample is True
+        if rand_oversample:
+            X_train, Y_train = self._perform_random_oversampling(
+                X_train, Y_train)
+
+        # Save the train-test splits if self.save_train_test is True
+        if self.save_train_test:
+            logging.info("Saving train-test splits...")
+            rnn_data_path = self._save_train_test_data(
+                X_train, Y_train, X_test, Y_test)
+
+        # Logging messages to indicate the end of the function
+        logging.info(
+            "Sequences and train-test splits prepared successfully in RNNDataPrep -> prepare_rnn_data.\n")
+        return X_train, Y_train, X_test, Y_test
+
     def _prep_train_test_seqs(self, df: pd.DataFrame, sequence_length: int, split_ratio: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Prepares training and testing sequences for the RNN model.
@@ -280,8 +287,16 @@ class RNNDataPrep:
 
         Returns
         -------
-        Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
-            The train-test splits as (X_train, Y_train, X_test, Y_test).
+        X_train : numpy.ndarray
+            The training input sequences.
+        Y_train : numpy.ndarray
+            The training target values.
+        X_test : numpy.ndarray
+            The testing input sequences.
+        Y_test : numpy.ndarray
+            The testing target values.
+        test_indices : numpy.ndarray
+            The indices of the target values in the original test data.
         """
         logging.info(
             "\nStarting to prepare train and test sequences in RNNDataPrep -> _prep_train_test_seqs...")
@@ -327,6 +342,7 @@ class RNNDataPrep:
 
         logging.debug("Pre-allocated NumPy arrays for train and test sets.")
 
+        test_indices = []
         train_idx, test_idx = 0, 0
         for i, (file, file_length) in enumerate(zip(unique_files, file_lengths)):
             print(f"===================")
@@ -338,7 +354,9 @@ class RNNDataPrep:
 
             logging.debug("Creating sequences for the current file...")
 
-            x, y = self._create_seqs(
+            # Create sequences for the current file
+            # and extract the indices of the target values
+            x, y, idx = self._create_seqs(
                 file_data, sequence_length=sequence_length)
 
             # Calculate the split index for this file
@@ -351,15 +369,17 @@ class RNNDataPrep:
             logging.debug("Adding sequences to pre-allocated arrays...")
 
             # Add the sequences to the pre-allocated arrays
-            X_train[train_idx:train_idx +
-                    file_train_size] = x[:file_train_size]
-            Y_train[train_idx:train_idx +
-                    file_train_size] = y[:file_train_size]
-            X_test[test_idx:test_idx + n -
-                   file_train_size] = x[file_train_size:]
-            Y_test[test_idx:test_idx + n -
-                   file_train_size] = y[file_train_size:]
+            X_train[train_idx:train_idx + file_train_size] = x[:file_train_size]
+            Y_train[train_idx:train_idx + file_train_size] = y[:file_train_size]
+            X_test[test_idx:test_idx + n - file_train_size] = x[file_train_size:]
+            Y_test[test_idx:test_idx + n - file_train_size] = y[file_train_size:]
 
+            # Extract the test indices corresponding to Y_test
+            # In the line below, [file_train_size:] is used to get the test indices
+            # then, idx[file_train_size:] is used to get the indices of the target values for the test sequences
+            # finally, we extend the test_indices list with these indices
+            test_indices.extend(idx[file_train_size:])
+            
             # Check X array shapes
             logging.debug(
                 f"X_train shape: {str(X_train.shape):>10}, X_test shape: {str(X_test.shape):>10}")
@@ -375,13 +395,14 @@ class RNNDataPrep:
 
         logging.info(
             f"\nPrepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
-
         logging.info(
             "Train and test sequence preparation completed in RNNDataPrep -> _prep_train_test_seqs.\n")
 
-        return X_train, Y_train, X_test, Y_test
+        self.test_indices = test_indices
+        return X_train, Y_train, X_test, Y_test, test_indices
 
-    def _create_seqs(self, data: np.ndarray, sequence_length: int) -> Tuple[np.ndarray, np.ndarray]:
+
+    def _create_seqs(self, data: np.ndarray, sequence_length: int = 5) -> Tuple[np.ndarray, np.ndarray]:
         """
         Creates sequences of length `sequence_length` from the input `data`.
 
@@ -390,7 +411,7 @@ class RNNDataPrep:
         data : numpy.ndarray
             The input data, with shape `(n_samples, n_features)`.
         sequence_length : int
-            The length of the sequences to create.
+            The length of the sequences to create. Defaults to 5.
 
         Returns
         -------
@@ -398,20 +419,22 @@ class RNNDataPrep:
             The input sequences, with shape `(n_samples - sequence_length, sequence_length, n_features)`.
         y : numpy.ndarray
             The target values, with shape `(n_samples - sequence_length,)`.
+        target_indices : numpy.ndarray
+            The indices of the target values in the original data.
 
         Notes
         -----
         This function creates sequences of length `sequence_length` from the input `data`. Each sequence consists of `sequence_length`
         consecutive rows of `data`, and the target value for each sequence is the value in the last row of the sequence.
-
-        TODO: Add FD's code changes for this function.
         """
         n = len(data) - sequence_length
         # -1 because we're dropping the target column in x
         x = np.empty((n, sequence_length, data.shape[1]-1))
         y = np.empty(n)
+        target_indices = np.empty(n, dtype=int)
 
         valid_idx = 0
+        index_start = 0
         for i in range(n):
             target = data[i + sequence_length, -1]
             # -1 because we're dropping the target column in the X sequences
@@ -421,12 +444,17 @@ class RNNDataPrep:
             if not np.isnan(sequence).any() and not np.isnan(target):
                 x[valid_idx] = sequence
                 y[valid_idx] = target
+
+                # Store the index of the target row/observation in the sequence
+                target_indices[valid_idx] = index_start + i + sequence_length
+
                 valid_idx += 1
 
         # Trim the arrays to the size of valid sequences
         x = x[:valid_idx]
         y = y[:valid_idx]
-        return x, y
+        target_indices = target_indices[:valid_idx]
+        return x, y, target_indices
 
     def _perform_random_oversampling(self, X_train, Y_train):
         """
