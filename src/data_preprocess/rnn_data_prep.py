@@ -38,6 +38,8 @@ class RNNDataPrep:
         Whether to save the train and test datasets as .pkl files.
     save_data : bool
         Whether to save the processed data as a .pkl file.
+    df : pandas.DataFrame
+        The preprocessed and feature engineered data.
     timestamp : str
         The current timestamp.
     raw_data_path : pathlib.Path
@@ -99,6 +101,7 @@ class RNNDataPrep:
         self.save_train_test = save_train_test
         self.save_data = save_data
 
+        self.df = None
         self.timestamp = datetime.now().strftime("%Y%m%d")
         self.raw_data_path = None
         self.interim_data_path = self.pickle_path
@@ -138,25 +141,25 @@ class RNNDataPrep:
         self.raw_data_id = self.preprocessor.raw_data_id
 
         logging.info("Loading raw/interim data...")
-        df = self.preprocessor.load_data()
+        self.df = self.preprocessor.load_data()
 
         # Perform preprocessing steps
         logging.info("Performing preprocessing steps on raw/interim data...")
-        df = self.preprocessor.preprocess_data()
-        if df is None:
+        self.df = self.preprocessor.preprocess_data()
+        if self.df is None:
             raise ValueError(
                 "DataFrame 'df' is None after preprocessing!!??!!")
 
         # Perform feature engineering steps
         logging.info(
             "Performing feature engineering steps on preprocessed raw/interim data...")
-        self.feature_engineer = FeatureEngineer(df)
-        df = self.feature_engineer.engineer_features()
+        self.feature_engineer = FeatureEngineer(self.df)
+        self.df = self.feature_engineer.engineer_features()
 
         # Logging messages to indicate the end of the function
         logging.info(
             "Data loading, preprocessing, and feature engineering completed in RNNDataPrep -> load_and_preprocess_data.\n")
-        return df
+        return self.df
 
     def get_rnn_data(self, load_train_test: bool = False, sequence_length: int = 3, split_ratio: float = 2/3, save_train_test: bool = None, save_data: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -202,13 +205,13 @@ class RNNDataPrep:
         else:
             logging.info(
                 "Load raw/interim data to be preprocessed/prepared in RNNDataPrep -> get_rnn_data() ...")
-            df = self.load_and_preprocess_data()
+            self.df = self.load_and_preprocess_data()
             logging.info(
                 "Raw/interim data loaded successfully in RNNDataPrep -> get_rnn_data().")
             logging.info(
                 "Prepare RNN train & test datasets from raw/interim data in RNNDataPrep -> get_rnn_data() ...")
             X_train, Y_train, X_test, Y_test = self.prepare_rnn_data(
-                df, sequence_length=sequence_length, split_ratio=split_ratio)
+                self.df, sequence_length=sequence_length, split_ratio=split_ratio)
             logging.info(
                 "Train & test datasets prepared successfully in RNNDataPrep -> get_rnn_data().")
 
@@ -255,7 +258,7 @@ class RNNDataPrep:
 
         # Prepare sequences and train-test splits
         X_train, Y_train, X_test, Y_test, _ = self._prep_train_test_seqs(
-            df, sequence_length=sequence_length, split_ratio=split_ratio)
+            self.df, sequence_length=sequence_length, split_ratio=split_ratio)
 
         # Perform Random Oversampling if rand_oversample is True
         if rand_oversample:
@@ -303,7 +306,7 @@ class RNNDataPrep:
             "\nStarting to prepare train and test sequences in RNNDataPrep -> _prep_train_test_seqs...")
 
         # Initial checks and setup
-        assert isinstance(df, pd.DataFrame), "df must be a pandas DataFrame."
+        assert isinstance(self.df, pd.DataFrame), "df must be a pandas DataFrame."
         assert isinstance(
             sequence_length, int), "sequence_length must be an integer."
         assert isinstance(split_ratio, float), "split_ratio must be a float."
@@ -314,16 +317,16 @@ class RNNDataPrep:
         logging.debug("Converting DataFrame to NumPy array...")
 
         # Convert DataFrame to NumPy array after dropping unnecessary columns
-        df_values = df.drop(['Frame', 'file'], axis=1).values
-        file_column = df['file'].values
+        df_values = self.df.drop(['Frame', 'file'], axis=1).values
+        file_column = self.df['file'].values
 
         logging.debug("Converted DataFrame to NumPy array.")
 
         logging.debug("Calculating sizes in advance for pre-allocation...")
 
         # Calculate sizes in advance for pre-allocation
-        unique_files = df['file'].unique()
-        file_lengths = df['file'].value_counts().values
+        unique_files = self.df['file'].unique()
+        file_lengths = self.df['file'].value_counts().values
         total_sequences = np.sum(file_lengths - sequence_length)
         train_size = int(total_sequences * split_ratio)
         test_size = total_sequences - train_size
@@ -335,7 +338,7 @@ class RNNDataPrep:
 
         # Pre-allocate NumPy arrays
         # -2 because we've dropped 'Frame' and 'file'
-        input_dim = df.shape[1] - 2
+        input_dim = self.df.shape[1] - 2
         X_train = np.zeros((train_size, sequence_length, input_dim - 1))
         Y_train = np.zeros(train_size)
         X_test = np.zeros((test_size, sequence_length, input_dim - 1))
