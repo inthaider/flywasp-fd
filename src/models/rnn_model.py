@@ -65,6 +65,36 @@ class RNN(nn.Module):
         # Create a sigmoid activation function
         self.sigmoid = nn.Sigmoid()
 
+    def forward(self, x):
+        """
+        Forward pass of the RNN model.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            The input data.
+
+        Returns
+        -------
+        torch.Tensor
+            The output data.
+
+        Notes
+        -----
+        The shape of the input tensor is (batch_size, seq_length, input_size).
+        The shape of the output tensor is (batch_size, output_size).???!!!
+        Using `.to(x.device)` in the `forward()` method ensures that the model
+            is moved to the same device as the input data.
+        """
+        h0 = torch.zeros(1, x.size(0), self.hidden_size).to(
+            x.device)  # initial hidden state
+        # out: tensor of shape (batch_size, seq_length, hidden_size)
+        out, _ = self.rnn(x, h0)
+        # decode the hidden state of the last time step
+        out = self.fc(out[:, -1, :])
+        out = self.sigmoid(out)
+        return out
+
 
 class WalkDataset(Dataset):
     """
