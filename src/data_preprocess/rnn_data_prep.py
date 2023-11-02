@@ -336,17 +336,21 @@ class RNNDataPrep:
 
         logger.debug("Pre-allocating numpy arrays...")
 
+        #
         # Pre-allocate NumPy arrays
+        #
         # -2 because we've dropped 'Frame' and 'file'
         input_dim = self.df.shape[1] - 2
         X_train = np.zeros((train_size, sequence_length, input_dim - 1))
         Y_train = np.zeros(train_size)
         X_test = np.zeros((test_size, sequence_length, input_dim - 1))
         Y_test = np.zeros(test_size)
+        # Calculate and store the min indices for each file
+        min_indices = df.groupby('file').apply(lambda x: x.index.min()).to_dict()
+        test_indices = np.zeros(test_size, dtype=int)
 
         logger.debug("Pre-allocated NumPy arrays for train and test sets.")
 
-        test_indices = []
         train_idx, test_idx = 0, 0
         for i, (file, file_length) in enumerate(zip(unique_files, file_lengths)):
             print(f"===================")
@@ -361,7 +365,7 @@ class RNNDataPrep:
             # Create sequences for the current file
             # and extract the indices of the target values
             x, y, idx = self._create_seqs(
-                file_data, sequence_length=sequence_length)
+                file_data, sequence_length=sequence_length, index_start=min_indices[file])
 
             # Calculate the split index for this file
             n = len(x)  # equal to file_length - sequence_length
@@ -372,28 +376,32 @@ class RNNDataPrep:
 
             logger.debug("Adding sequences to pre-allocated arrays...")
 
+            # Calculate the end indices for the training and testing data
+            train_end_idx = train_idx + file_train_size
+            test_end_idx = test_idx + n - file_train_size
+
             # Add the sequences to the pre-allocated arrays
-            X_train[train_idx:train_idx + file_train_size] = x[:file_train_size]
-            Y_train[train_idx:train_idx + file_train_size] = y[:file_train_size]
-            X_test[test_idx:test_idx + n - file_train_size] = x[file_train_size:]
-            Y_test[test_idx:test_idx + n - file_train_size] = y[file_train_size:]
+            X_train[train_idx:train_end_idx] = x[:file_train_size]
+            Y_train[train_idx:train_end_idx] = y[:file_train_size]
+            X_test[test_idx:test_end_idx] = x[file_train_size:]
+            Y_test[test_idx:test_end_idx] = y[file_train_size:]
+            test_indices[test_idx:test_end_idx] = idx[file_train_size:]
 
             # Extract the test indices corresponding to Y_test
-            # In the line below, [file_train_size:] is used to get the test indices
-            # then, idx[file_train_size:] is used to get the indices of the target values for the test sequences
-            # finally, we extend the test_indices list with these indices
-            test_indices.extend(idx[file_train_size:])
+            # In the line below, idx[file_train_size:] is used to get the indices of the target values for the test sequences
+            # and we add these to test_indices for the index range corresponding to the current file
+            test_indices[test_idx:test_end_idx] = idx[file_train_size:]
             
+            # Update the indices for the next iteration
+            train_idx = train_end_idx
+            test_idx = test_end_idx
+
             # Check X array shapes
             logger.debug(
                 f"X_train shape: {str(X_train.shape):>10}, X_test shape: {str(X_test.shape):>10}")
             # Check Y array shapes
             logger.debug(
                 f"Y_train shape: {str(Y_train.shape):>10}, Y_test shape: {str(Y_test.shape):>10}")
-
-            # Update the indices for the next iteration
-            train_idx += file_train_size
-            test_idx += n - file_train_size
 
         print(f"===================")
 
@@ -406,7 +414,7 @@ class RNNDataPrep:
         return X_train, Y_train, X_test, Y_test, test_indices
 
 
-    def _create_seqs(self, data: np.ndarray, sequence_length: int = 5) -> Tuple[np.ndarray, np.ndarray]:
+    def _create_seqs(self, data: np.ndarray, sequence_length: int = 5, index_start: int = 0) -> Tuple[np.ndarray, np.ndarray]:
         """
         Creates sequences of length `sequence_length` from the input `data`.
 
@@ -438,7 +446,6 @@ class RNNDataPrep:
         target_indices = np.empty(n, dtype=int)
 
         valid_idx = 0
-        index_start = 0
         for i in range(n):
             target = data[i + sequence_length, -1]
             # -1 because we're dropping the target column in the X sequences
