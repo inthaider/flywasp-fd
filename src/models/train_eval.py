@@ -70,9 +70,11 @@ def train_eval_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}\n-------------------------------")
 
+        print(f"Training the model...")
         # Train the model
         train_loss, train_f1 = train_loop(model, batch_size, device,
                                           prints_per_epoch, train_loader, criterion, optimizer, epoch)
+        print(f"Evaluating the model...")
         # Evaluate/Test the model
         test_loss, test_acc, test_f1, test_pr_auc, test_labels_and_probs = test_loop(
             model, device, test_loader, criterion)
@@ -90,6 +92,11 @@ def train_eval_model(X_train, Y_train, X_test, Y_test, input_size, hidden_size, 
         writer.add_scalar('Test Accuracy', test_acc, epoch)
         writer.add_scalar('Test F1 Score', test_f1, epoch)
         writer.add_scalar('Test Precision-Recall AUC', test_pr_auc, epoch)
+
+        print("Training Data Distribution:")
+        print(pd.Series(test_labels_and_probs[0]).value_counts().to_dict())
+        print("Predicted Data Distribution:")
+        print(pd.Series(test_labels_and_probs[1]).value_counts().to_dict())
 
         print(f"\n Epoch {epoch+1} Metrics -- Train Loss: {train_loss:.4f}, Train F1 Score: {train_f1:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, Test F1: {test_f1:.4f}, Test PR AUC: {test_pr_auc:.4f}\n")
 
@@ -175,7 +182,7 @@ def train_loop(model, batch_size, device, prints_per_epoch, train_loader, criter
         # Debugging: Check for NaN or inf in gradients
         debug_grad_nan_inf(model, epoch, i)
         # Debugging: Monitor sum of squared gradients and parameters
-        debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters)
+        sum_sq_gradients, sum_sq_parameters = debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters)
 
         # Get predicted class
         # The line below is basically taking the outputs tensor, which has shape (batch_size, 2), and getting the index of the maximum value in each row (i.e. the predicted class) and returning a tensor of shape (batch_size, 1)
@@ -289,10 +296,6 @@ def test_loop(model, device, test_loader, criterion):
     test_prec, test_rec, _ = precision_recall_curve(true_labels, pred_probs)
     test_pr_auc = auc(test_rec, test_prec)
 
-    print("Training Data Distribution:")
-    print(pd.Series(true_labels).value_counts().to_dict())
-    print("Predicted Data Distribution:")
-    print(pd.Series(pred_labels).value_counts().to_dict())
     print(
         f"Test Performance: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f}, F1 Score: {test_f1:.4f} \n")
 
