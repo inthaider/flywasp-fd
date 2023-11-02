@@ -15,12 +15,13 @@ def plot_predicted_probabilities(df, test_indices, test_labels_and_probs):
 
     """
     # Unpack the test_labels_and_probs numpy array
+    test_true_labels = test_labels_and_probs[0]
     test_pred_labels = test_labels_and_probs[1]
     test_pred_probs = test_labels_and_probs[2]
 
     # Create a DataFrame for plotting
     plot_df = _make_df_for_plotting(
-        df, test_indices, test_pred_labels, test_pred_probs)
+        df, test_indices, test_true_labels, test_pred_probs)
     # Process the DataFrame for plotting
     plot_df = _process_df_for_plotting(plot_df)
     # Calculate and plot the means
@@ -29,13 +30,13 @@ def plot_predicted_probabilities(df, test_indices, test_labels_and_probs):
     return plot_df, mean_df
 
 
-def _make_df_for_plotting(df, test_indices, test_pred_labels, test_pred_probs):
+def _make_df_for_plotting(df, test_indices, test_true_labels, test_pred_probs):
     """
     """
     merged_df = pd.DataFrame({
         'index': test_indices,
-        'y_pred_test': test_pred_labels,
-        'y_pred': test_pred_probs
+        'y_test_true': test_true_labels,
+        'y_test_pred_prob': test_pred_probs
     })
     plot_df = pd.merge(df, merged_df, left_index=True,
                        right_on='index', how='right')
@@ -104,22 +105,22 @@ def _calculate_and_plot_means(plot_df):
     plot_df_2 = plot_df[plot_df['flag'] == 1]
     plot_df_2['delta_frames'] = plot_df_2['Frame'] - plot_df_2['backing_frame']
     plot_df_2 = plot_df_2[['file', 'Frame', 'start_walk',
-                           'backing_frame', 'delta_frames', 'y_test', 'y_pred']]  # Do we need this line?
+                           'backing_frame', 'delta_frames', 'y_test_true', 'y_test_pred_prob']]  # Do we need this line?
 
     mean_df = plot_df_2.groupby('delta_frames')[
-        ['y_pred']].mean().reset_index()
+        ['y_test_pred_prob']].mean().reset_index()
 
     #
     # Plot of predictions within 200 frames (5 seconds
-    # Assuming mean_df is your DataFrame and it has columns 'delta_frames' and 'y_pred'
+    # Assuming mean_df is your DataFrame and it has columns 'delta_frames' and 'y_test_pred_prob'
     #
     plt.figure(figsize=(10, 6))
     # Plot mean of 'y_pred' vs mean of 'delta_frames'
-    plt.plot(mean_df['delta_frames'], mean_df['y_pred'])
+    plt.plot(mean_df['delta_frames'], mean_df['y_test_pred_prob'])
 
     plt.xlabel('Delta Frames')
-    plt.ylabel('Y_pred')
-    plt.title('Y_pred vs Delta Frames')
+    plt.ylabel('Y_test_pred_prob')
+    plt.title('Y_test_pred_prob vs Delta Frames')
 
     plt.show()
 
@@ -203,7 +204,10 @@ def debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters):
 
     Returns
     -------
-    None
+    sum_sq_gradients : float
+        The updated sum of squared gradients.
+    sum_sq_parameters : float
+        The updated sum of squared parameters.
     """
     for name, param in model.named_parameters():
         if param.grad is not None:
@@ -211,6 +215,8 @@ def debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters):
     for name, param in model.named_parameters():
         if param.data is not None:
             sum_sq_parameters += torch.sum(param.data ** 2).item()
+
+    return sum_sq_gradients, sum_sq_parameters
 
 
 def debug_grad_nan_inf(model, epoch, i):
