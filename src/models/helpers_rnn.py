@@ -103,7 +103,8 @@ def _calculate_and_plot_means(plot_df):
     """
     # Plot of predicted probabilities 1 second before and after a true backing event????
     plot_df_2 = plot_df[plot_df['flag'] == 1]
-    plot_df_2['delta_frames'] = plot_df_2['Frame'] - plot_df_2['backing_frame']
+    plot_df_2.loc[:, 'delta_frames'] = plot_df_2['Frame'] - \
+        plot_df_2['backing_frame']
     plot_df_2 = plot_df_2[['file', 'Frame', 'start_walk',
                            'backing_frame', 'delta_frames', 'y_test_true', 'y_test_pred_prob']]  # Do we need this line?
 
