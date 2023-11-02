@@ -61,7 +61,7 @@ class FeatureEngineer:
             raise ValueError(
                 "All elements of columns_to_scale must be columns in the DataFrame.")
         try:
-            logging.info("Standardizing features...")
+            logger.info("Standardizing features...")
             # sklearn's StandardScaler().fit_transform works by first
             # calculating the mean and standard deviation of each column
             # and then using those values to standardize the column.
@@ -71,7 +71,7 @@ class FeatureEngineer:
             self.df[columns_to_scale] = self.scaler.fit_transform(
                 self.df[columns_to_scale])
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"An error occurred while standardizing features: {e}")
             raise e
 
@@ -80,7 +80,7 @@ class FeatureEngineer:
         Performs feature engineering steps on the DataFrame.
         """
         # Logging the start of the feature engineering step
-        logging.info("\n\nEngineering features (in FeatureEngineer class)...")
+        logger.info("\n\nEngineering features (in FeatureEngineer class)...")
 
         # Standardize the selected features
         self.standardize_features(
@@ -110,6 +110,6 @@ class FeatureEngineer:
         # ...
 
         # Logging the end of the feature engineering step
-        logging.info(
+        logger.info(
             "Finished engineering features (in FeatureEngineer class).\n\n")
         return self.df

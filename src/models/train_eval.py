@@ -191,7 +191,7 @@ def train_loop(model, batch_size, device, prints_per_epoch, train_loader, criter
                 f"Loss: {loss:>7f}  [{current_iter:>5d}/{size_train:>5d}]")
 
     # Log sum of squared gradients and parameters after each epoch
-    logging.info(
+    logger.info(
         f"\nSum squared grads/params in Epoch {epoch+1}:\n"
         f"\tSum of squared gradients : {sum_sq_gradients:>12.4f}\n"
         f"\tSum of squared parameters: {sum_sq_parameters:>12.4f}"

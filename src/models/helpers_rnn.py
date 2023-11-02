@@ -158,7 +158,7 @@ def save_model_and_config(model, model_name, timestamp, pickle_path, processed_d
     existing_models = [f.name for f in model_dir.glob("*.pt")]
     existing_configs = [f.name for f in config_dir.glob("*.yaml")]
     if f"rnn_model_{model_hash}.pt" in existing_models and f"config_{config_hash}.yaml" in existing_configs:
-        logging.info("Model and configuration already exist. Skipping saving.")
+        logger.info("Model and configuration already exist. Skipping saving.")
     else:
         # Save the trained model
         model_path = model_dir / \
@@ -233,7 +233,7 @@ def debug_grad_nan_inf(model, epoch, i):
                 param.grad)) + torch.sum(torch.isinf(param.grad))
             if grad_check > 0:
                 if log_invalid_grad:
-                    logging.warning(
+                    logger.warning(
                         f"First occurrence of invalid GRADIENT:\n"
                         f"\tParameter   : {name:>15s}\n"
                         f"\tIteration   : {i:>15d}\n"
@@ -259,7 +259,7 @@ def debug_loss_nan_inf(epoch, i, loss):
     log_invalid_loss = True
     if np.isnan(loss.item()) or np.isinf(loss.item()):
         if log_invalid_loss:
-            logging.warning(
+            logger.warning(
                 f"First occurrence of invalid LOSS:\n"
                 f"\tLoss        : {loss.item():>15.4f}\n"
                 f"\tIteration   : {i:>15d}\n"

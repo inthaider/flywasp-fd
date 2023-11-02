@@ -127,7 +127,7 @@ class RNNDataPrep:
             The preprocessed and feature engineered data.
         """
         # Logging messages to indicate the start of the function
-        logging.info(
+        logger.info(
             "\nLoading & preprocessing raw/interim data to be prepared for RNN in RNNDataPrep -> load_and_preprocess_data...")
 
         # Set the value of self.save_data to the value of save_data if save_data is not None
@@ -140,24 +140,24 @@ class RNNDataPrep:
         self.processed_data_path = self.preprocessor.processed_data_path
         self.raw_data_id = self.preprocessor.raw_data_id
 
-        logging.info("Loading raw/interim data...")
+        logger.info("Loading raw/interim data...")
         self.df = self.preprocessor.load_data()
 
         # Perform preprocessing steps
-        logging.info("Performing preprocessing steps on raw/interim data...")
+        logger.info("Performing preprocessing steps on raw/interim data...")
         self.df = self.preprocessor.preprocess_data()
         if self.df is None:
             raise ValueError(
                 "DataFrame 'df' is None after preprocessing!!??!!")
 
         # Perform feature engineering steps
-        logging.info(
+        logger.info(
             "Performing feature engineering steps on preprocessed raw/interim data...")
         self.feature_engineer = FeatureEngineer(self.df)
         self.df = self.feature_engineer.engineer_features()
 
         # Logging messages to indicate the end of the function
-        logging.info(
+        logger.info(
             "Data loading, preprocessing, and feature engineering completed in RNNDataPrep -> load_and_preprocess_data.\n")
         return self.df
 
@@ -184,9 +184,9 @@ class RNNDataPrep:
             The train-test splits as (X_train, Y_train, X_test, Y_test).
         """
         # Logging messages to indicate the start of the function
-        logging.info(
+        logger.info(
             "\n\nGet RNN train & test datasets (in RNNDataPrep class)...")
-        logging.info(f"\tThe steps are:- \n\t\tif load_train_test=True, (1) Load existing train/test data; \n\t\tELSE, (1) Load and preprocess raw/interim data, (2) Prepare RNN train & test datasets from the preprocessed data, (3) Save the train & test datasets (if save_train_test = True).")
+        logger.info(f"\tThe steps are:- \n\t\tif load_train_test=True, (1) Load existing train/test data; \n\t\tELSE, (1) Load and preprocess raw/interim data, (2) Prepare RNN train & test datasets from the preprocessed data, (3) Save the train & test datasets (if save_train_test = True).")
 
         # Set the values of self.save_train_test and self.save_data to the values of save_train_test and save_data if they are not None
         if save_train_test is not None:
@@ -195,28 +195,28 @@ class RNNDataPrep:
             self.save_data = save_data
 
         if load_train_test:
-            logging.info(
+            logger.info(
                 "Load preprocessed train & test datasets in RNNDataPrep -> get_rnn_data() ...")
             self.train_test_data_dir = Path(
                 f'{self.train_test_data_par_dir}/fd_v0')
             X_train, Y_train, X_test, Y_test = self._load_train_test_data()
-            logging.info(
+            logger.info(
                 "Train & test datasets loaded successfully in RNNDataPrep -> get_rnn_data().")
         else:
-            logging.info(
+            logger.info(
                 "Load raw/interim data to be preprocessed/prepared in RNNDataPrep -> get_rnn_data() ...")
             self.df = self.load_and_preprocess_data()
-            logging.info(
+            logger.info(
                 "Raw/interim data loaded successfully in RNNDataPrep -> get_rnn_data().")
-            logging.info(
+            logger.info(
                 "Prepare RNN train & test datasets from raw/interim data in RNNDataPrep -> get_rnn_data() ...")
             X_train, Y_train, X_test, Y_test = self.prepare_rnn_data(
                 self.df, sequence_length=sequence_length, split_ratio=split_ratio)
-            logging.info(
+            logger.info(
                 "Train & test datasets prepared successfully in RNNDataPrep -> get_rnn_data().")
 
         # Logging messages to indicate the end of the function
-        logging.info(
+        logger.info(
             "RNN train & test datasets retrieved successfully in RNNDataPrep -> get_rnn_data().\n\n")
         return X_train, Y_train, X_test, Y_test
 
@@ -249,7 +249,7 @@ class RNNDataPrep:
             The testing target values.
         """
         # Logging messages to indicate the start of the function
-        logging.info(
+        logger.info(
             "\nPreparing sequences and train-test splits for RNN in RNNDataPrep -> prepare_rnn_data...")
 
         # Set the value of self.save_train_test to the value of save_train_test if save_data is not None
@@ -267,12 +267,12 @@ class RNNDataPrep:
 
         # Save the train-test splits if self.save_train_test is True
         if self.save_train_test:
-            logging.info("Saving train-test splits...")
+            logger.info("Saving train-test splits...")
             rnn_data_path = self._save_train_test_data(
                 X_train, Y_train, X_test, Y_test)
 
         # Logging messages to indicate the end of the function
-        logging.info(
+        logger.info(
             "Sequences and train-test splits prepared successfully in RNNDataPrep -> prepare_rnn_data.\n")
         return X_train, Y_train, X_test, Y_test
 
@@ -302,7 +302,7 @@ class RNNDataPrep:
         test_indices : numpy.ndarray
             The indices of the target values in the original test data.
         """
-        logging.info(
+        logger.info(
             "\nStarting to prepare train and test sequences in RNNDataPrep -> _prep_train_test_seqs...")
 
         # Initial checks and setup
@@ -312,17 +312,17 @@ class RNNDataPrep:
         assert isinstance(split_ratio, float), "split_ratio must be a float."
         assert 0 < split_ratio < 1, "split_ratio must be between 0 and 1."
 
-        logging.debug("Initial checks and setup completed.")
+        logger.debug("Initial checks and setup completed.")
 
-        logging.debug("Converting DataFrame to NumPy array...")
+        logger.debug("Converting DataFrame to NumPy array...")
 
         # Convert DataFrame to NumPy array after dropping unnecessary columns
         df_values = self.df.drop(['Frame', 'file'], axis=1).values
         file_column = self.df['file'].values
 
-        logging.debug("Converted DataFrame to NumPy array.")
+        logger.debug("Converted DataFrame to NumPy array.")
 
-        logging.debug("Calculating sizes in advance for pre-allocation...")
+        logger.debug("Calculating sizes in advance for pre-allocation...")
 
         # Calculate sizes in advance for pre-allocation
         unique_files = self.df['file'].unique()
@@ -331,10 +331,10 @@ class RNNDataPrep:
         train_size = int(total_sequences * split_ratio)
         test_size = total_sequences - train_size
 
-        logging.info(
+        logger.info(
             f"Calculated train_size: {train_size}, test_size: {test_size}")
 
-        logging.debug("Pre-allocating numpy arrays...")
+        logger.debug("Pre-allocating numpy arrays...")
 
         # Pre-allocate NumPy arrays
         # -2 because we've dropped 'Frame' and 'file'
@@ -344,7 +344,7 @@ class RNNDataPrep:
         X_test = np.zeros((test_size, sequence_length, input_dim - 1))
         Y_test = np.zeros(test_size)
 
-        logging.debug("Pre-allocated NumPy arrays for train and test sets.")
+        logger.debug("Pre-allocated NumPy arrays for train and test sets.")
 
         test_indices = []
         train_idx, test_idx = 0, 0
@@ -356,7 +356,7 @@ class RNNDataPrep:
             # Use NumPy-based filtering for file_data
             file_data = df_values[file_column == file]
 
-            logging.debug("Creating sequences for the current file...")
+            logger.debug("Creating sequences for the current file...")
 
             # Create sequences for the current file
             # and extract the indices of the target values
@@ -368,9 +368,9 @@ class RNNDataPrep:
             # number of training sequences
             file_train_size = int(n * split_ratio)
 
-            logging.info(f"Calculated file_train_size: {file_train_size}")
+            logger.info(f"Calculated file_train_size: {file_train_size}")
 
-            logging.debug("Adding sequences to pre-allocated arrays...")
+            logger.debug("Adding sequences to pre-allocated arrays...")
 
             # Add the sequences to the pre-allocated arrays
             X_train[train_idx:train_idx + file_train_size] = x[:file_train_size]
@@ -385,10 +385,10 @@ class RNNDataPrep:
             test_indices.extend(idx[file_train_size:])
             
             # Check X array shapes
-            logging.debug(
+            logger.debug(
                 f"X_train shape: {str(X_train.shape):>10}, X_test shape: {str(X_test.shape):>10}")
             # Check Y array shapes
-            logging.debug(
+            logger.debug(
                 f"Y_train shape: {str(Y_train.shape):>10}, Y_test shape: {str(Y_test.shape):>10}")
 
             # Update the indices for the next iteration
@@ -397,9 +397,9 @@ class RNNDataPrep:
 
         print(f"===================")
 
-        logging.info(
+        logger.info(
             f"\nPrepared {len(X_train)} training sequences and {len(X_test)} testing sequences.")
-        logging.info(
+        logger.info(
             "Train and test sequence preparation completed in RNNDataPrep -> _prep_train_test_seqs.\n")
 
         self.test_indices = test_indices
@@ -479,7 +479,7 @@ class RNNDataPrep:
             The resampled training target values.
         """
         # Logging messages to indicate the start of the function
-        logging.info(
+        logger.info(
             "\nPerforming random oversampling to balance the class distribution...")
 
         ros = RandomOverSampler(random_state=42)
@@ -491,13 +491,13 @@ class RNNDataPrep:
         X_train_resampled = X_train_resampled.reshape(-1, *original_shape)
 
         # Logging messages comparing the original and resampled dataset shapes for both X_train and Y_train with appropriate formatting and spacing in the printed output (using f-strings and :> formatting)
-        logging.info(
+        logger.info(
             f"Original dataset shape: {X_train.shape:>10}, {Y_train.shape:>10}")
-        logging.info(
+        logger.info(
             f"Resampled dataset shape: {X_train_resampled.shape:>10}, {Y_train_resampled.shape:>10}")
 
         # Logging messages to indicate the end of the function
-        logging.info("Random oversampling completed.\n")
+        logger.info("Random oversampling completed.\n")
         return X_train_resampled, Y_train_resampled
 
     def _load_train_test_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -510,7 +510,7 @@ class RNNDataPrep:
             The train-test splits as (X_train, Y_train, X_test, Y_test).
         """
         # Logging messages to indicate the start of the function
-        logging.info("\nLoading train and test datasets...")
+        logger.info("\nLoading train and test datasets...")
         try:
             # Load the train and test datasets from .pkl files
             X_train_file = Path(self.train_test_data_dir) / "X_train.pkl"
@@ -524,10 +524,10 @@ class RNNDataPrep:
             Y_test = pickle.load(open(Y_test_file, "rb"))
 
             # Logging messages to indicate the end of the function
-            logging.info("Train and test datasets loaded successfully.\n")
+            logger.info("Train and test datasets loaded successfully.\n")
             return X_train, Y_train, X_test, Y_test
         except Exception as e:
-            logging.error(f"\nERROR loading train and test datasets: {e}\n")
+            logger.error(f"\nERROR loading train and test datasets: {e}\n")
             raise
 
     def _save_train_test_data(self, X_train: np.ndarray, Y_train: np.ndarray, X_test: np.ndarray, Y_test: np.ndarray) -> str:
@@ -551,7 +551,7 @@ class RNNDataPrep:
             The path to the directory containing the saved train-test splits.
         """
         # Logging messages to indicate the start of the function
-        logging.info("\nSaving train and test datasets...")
+        logger.info("\nSaving train and test datasets...")
         try:
             # Create a timestamped directory for the processed data
             self.train_test_data_dir = Path(
@@ -574,9 +574,9 @@ class RNNDataPrep:
                 pickle.dump(Y_test, f)
 
             # Logging messages to indicate the end of the function
-            logging.info(
+            logger.info(
                 f"Successfully saved train and test datasets to {self.train_test_data_dir}.\n")
             return str(self.train_test_data_dir)
         except Exception as e:
-            logging.error(f"\ERROR saving train and test datasets: {e}\n")
+            logger.error(f"\ERROR saving train and test datasets: {e}\n")
             raise

@@ -99,18 +99,18 @@ class DataPreprocessor:
             The loaded DataFrame.
         """
         # Logging statement to indicate the start of loading data
-        logging.info("\nLoading data in DataPreprocessor -> load_data() ...")
+        logger.info("\nLoading data in DataPreprocessor -> load_data() ...")
         try:
             if self.pickle_path:
-                logging.info(f"Loading data from {self.pickle_path}...")
+                logger.info(f"Loading data from {self.pickle_path}...")
                 self.df = pd.read_pickle(self.pickle_path)
-                logging.info(f"Data loaded from {self.pickle_path}.")
+                logger.info(f"Data loaded from {self.pickle_path}.")
                 return self.df
             else:
                 raise ValueError(
                     "\nVALUE ERROR: Provide a valid pickle path.\n")
         except Exception as e:
-            logging.error(f"\nERROR loading data: {e}\n")
+            logger.error(f"\nERROR loading data: {e}\n")
             raise
 
     def save_processed_data(self) -> str:
@@ -123,7 +123,7 @@ class DataPreprocessor:
             The path to the saved pickled file.
         """
         # Logging statement to indicate the start of saving processed data
-        logging.info(
+        logger.info(
             "\nSaving processed data in DataPreprocessor -> save_processed_data() ...")
         try:
             # Create the directory for the processed data if it doesn't exist
@@ -133,26 +133,26 @@ class DataPreprocessor:
             #
             # Generate a hash based on DataFrame metadata and some sampling
             #
-            logging.info("Generating hash for processed data...")
+            logger.info("Generating hash for processed data...")
             # Extracting the shape, columns and a sample of the dataframe
             df_summary = f"{self.df.shape}{self.df.columns}{self.df.sample(n=10, random_state=1)}"
             # Generating the hash using the md5 algorithm based on the dataframe summary
             processed_data_hash = hashlib.md5(df_summary.encode()).hexdigest()
-            logging.info("Processed data hashed.")
+            logger.info("Processed data hashed.")
 
             # Construct the output file path
             self.processed_data_path = processed_data_dir / \
                 f"{self.timestamp}_processed_data_{processed_data_hash}.pkl"
 
             # Save the processed data to the output file
-            logging.info(
+            logger.info(
                 f"Saving processed data to {self.processed_data_path}...")
             self.df.to_pickle(self.processed_data_path)
-            logging.info(
+            logger.info(
                 f"Processed data saved to {self.processed_data_path}.\n")
             return str(self.processed_data_path)
         except Exception as e:
-            logging.error(f"\nERROR saving processed data: {e}\n")
+            logger.error(f"\nERROR saving processed data: {e}\n")
             raise
 
     def drop_columns(self, columns_to_drop):
@@ -165,15 +165,15 @@ class DataPreprocessor:
             The names of the columns to drop.
         """
         # Logging statement to indicate the start of dropping columns
-        logging.info(
+        logger.info(
             f"\nDropping columns {columns_to_drop} in DataPreprocessor -> drop_columns() ...")
         try:
             self.df.drop(columns_to_drop, axis=1, inplace=True)
             # Logging statement to indicate the end of dropping columns
-            logging.info(
+            logger.info(
                 f"Columns dropped successfully.\n")
         except Exception as e:
-            logging.error(f"\nERROR dropping columns: {e}\n")
+            logger.error(f"\nERROR dropping columns: {e}\n")
             raise
 
     def specific_rearrange(self, col_to_move, ref_col):
@@ -188,20 +188,20 @@ class DataPreprocessor:
             The name of the reference column.
         """
         # Logging statement to indicate the start of moving a column
-        logging.info(
+        logger.info(
             f"\nRearranging specific columns in DataPreprocessor -> specific_rearrange() ...")
         try:
-            logging.info(
+            logger.info(
                 f"Moving column {col_to_move} to be immediately after {ref_col}...")
             cols = self.df.columns.tolist()
             cols.insert(cols.index(ref_col) + 1,
                         cols.pop(cols.index(col_to_move)))
             self.df = self.df[cols]
             # Logging statement to indicate the end of moving a column
-            logging.info(
+            logger.info(
                 f"Column moved successfully.\n")
         except Exception as e:
-            logging.error(f"\nERROR moving column: {e}\n")
+            logger.error(f"\nERROR moving column: {e}\n")
             raise
 
     def rearrange_columns(self, cols_order):
@@ -214,16 +214,16 @@ class DataPreprocessor:
             The desired order of the columns.
         """
         # Logging statement to indicate the start of rearranging columns
-        logging.info(
+        logger.info(
             f"\nRearranging columns in DataPreprocessor -> rearrange_columns() ...")
         try:
-            logging.info(f"Rearranging columns to {cols_order}...")
+            logger.info(f"Rearranging columns to {cols_order}...")
             self.df = self.df[cols_order]
             # Logging statement to indicate the end of rearranging columns
-            logging.info(
+            logger.info(
                 f"Columns rearranged successfully.\n")
         except Exception as e:
-            logging.error(f"\nERROR rearranging columns: {e}\n")
+            logger.error(f"\nERROR rearranging columns: {e}\n")
             raise
 
     def calculate_means(self, column_pairs, new_columns):
@@ -238,19 +238,19 @@ class DataPreprocessor:
             The names of the new columns to add.
         """
         # Logging statement to indicate the start of calculating means
-        logging.info(
+        logger.info(
             f"\nCalculating means in DataPreprocessor -> calculate_means() ...")
         try:
             for pair, new_col in zip(column_pairs, new_columns):
-                logging.info(
+                logger.info(
                     f"Calculating mean of columns {pair} and adding as {new_col}...")
                 self.df[new_col] = self.df[pair].mean(axis=1)
 
             # Logging statement to indicate the end of calculating means
-            logging.info(
+            logger.info(
                 f"Means calculated successfully.\n")
         except Exception as e:
-            logging.error(f"\nERROR calculating means: {e}\n")
+            logger.error(f"\nERROR calculating means: {e}\n")
             raise
 
     def add_labels(self, condition_columns, new_column):
@@ -265,19 +265,19 @@ class DataPreprocessor:
             The name of the new column to add.
         """
         # Logging statement to indicate the start of adding labels
-        logging.info(
+        logger.info(
             f"\nAdding labels in DataPreprocessor -> add_labels() ...")
         try:
-            logging.info(
+            logger.info(
                 f"Adding new column {new_column} based on conditions of columns {condition_columns}...")
             self.df[new_column] = ((self.df[condition_columns[0]] == 1) & (
                 self.df[condition_columns[1]].shift(1) == 0)).astype(int)
 
             # Logging statement to indicate the end of adding labels
-            logging.info(
+            logger.info(
                 f"Labels added successfully.\n")
         except Exception as e:
-            logging.error(f"\nERROR adding labels: {e}\n")
+            logger.error(f"\nERROR adding labels: {e}\n")
             raise
 
     def handle_infinity_and_na(self):
@@ -288,7 +288,7 @@ class DataPreprocessor:
         TODO: Implement forward and backward filling.
         """
         try:
-            logging.info("Handling infinite and NaN values...")
+            logger.info("Handling infinite and NaN values...")
 
             # Replace infinite values with NaN
             self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -304,7 +304,7 @@ class DataPreprocessor:
             # self.df.fillna(method='bfill', inplace=True)
 
         except Exception as e:
-            logging.error(f"\nERROR handling infinite and NaN values: {e}\n")
+            logger.error(f"\nERROR handling infinite and NaN values: {e}\n")
             raise
 
     def preprocess_data(self, save_data: bool = None):
@@ -322,7 +322,7 @@ class DataPreprocessor:
             The preprocessed DataFrame.
         """
         # Add logging statements to indicate the start of preprocessing as part of the DataPreprocessor class
-        logging.info("\n\nPreprocessing data (in DataPreprocessor class)...")
+        logger.info("\n\nPreprocessing data (in DataPreprocessor class)...")
 
         # Set the value of self.save_data to the value of save_data if save_data is not None
         if save_data is not None:
@@ -373,7 +373,7 @@ class DataPreprocessor:
 
         # Save the processed data to a pickled file if self.save_data is True.
         if self.save_data:
-            logging.info(
+            logger.info(
                 "!! save_data is True !!")
             self.save_processed_data()
 
@@ -384,5 +384,5 @@ class DataPreprocessor:
             f"DataPreprocessor.preprocess_data --> Columns of the dataframe: {self.df.columns}\n")
 
         # Add logging statements to indicate the end of preprocessing as part of the DataPreprocessor class
-        logging.info("Preprocessing complete (in DataPreprocessor class).\n\n")
+        logger.info("Preprocessing complete (in DataPreprocessor class).\n\n")
         return self.df

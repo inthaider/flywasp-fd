@@ -12,6 +12,7 @@ from src.data_preprocess.preprocessing import DataPreprocessor
 
 logger = logging.getLogger(__name__)
 
+
 def get_hash(obj):
     """
     Returns the hash value of an object as a string.
