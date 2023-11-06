@@ -3,6 +3,59 @@ import numpy as np
 import pandas as pd
 import hashlib
 
+def preprocess_data(df):
+    """
+    Performs preprocessing steps on the input DataFrame.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The input DataFrame.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The preprocessed DataFrame.
+    """
+    preprocessor = DataPreprocessor(df=df)
+    preprocessor.drop_columns(["plot"])  # Drop the 'plot' column
+    # Calculate the mean of 'ANTdis_1' and 'ANTdis_2' and store it in a new column 'ANTdis'
+    preprocessor.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])
+    # Add a new column 'start_walk' with value 'walk_backwards' for rows where the 'walk_backwards' column has value 'walk_backwards'
+    preprocessor.add_labels(["walk_backwards", "walk_backwards"], "start_walk")
+    # Replace infinity and NaN values with appropriate values
+    preprocessor.handle_infinity_and_na()
+    preprocessor.specific_rearrange(
+        "F2Wdis_rate", "F2Wdis"
+    )  # Rearrange the column names
+    preprocessor.rearrange_columns(
+        [
+            "Frame",
+            "Fdis",
+            "FdisF",
+            "FdisL",
+            "Wdis",
+            "WdisF",
+            "WdisL",
+            "Fangle",
+            "Wangle",
+            "F2Wdis",
+            "F2Wdis_rate",
+            "F2Wangle",
+            "W2Fangle",
+            "ANTdis",
+            "F2W_blob_dis",
+            "bp_F_delta",
+            "bp_W_delta",
+            "ap_F_delta",
+            "ap_W_delta",
+            "ant_W_delta",
+            "file",
+            "start_walk",
+        ]
+    )  # Rearrange the columns in a specific order
+    return preprocessor.df
+
 ###
 # Will use the function below if/when we have appropriate raw, processed, and interim data
 ###
