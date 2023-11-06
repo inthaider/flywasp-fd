@@ -18,6 +18,8 @@ from docx.shared import Inches
 from datetime import datetime
 import time
 
+import torch.nn.functional as F
+
 ## Load in the dataframe
 pickle_path = r"D:\Fly-Wasp\Data\Pickle Objects\Wild-Type\\"
 
@@ -44,8 +46,7 @@ df['start_walk'] = ((df['walk_backwards'] == 1) & (df['walk_backwards'].shift(1)
 
 df = df[['Frame', 'Fdis', 'FdisF', 'FdisL', 'Wdis', 'WdisF',
        'WdisL', 'Fangle', 'Wangle', 'F2Wdis', 'F2Wdis_rate', 'F2Wangle',
-       'W2Fangle', 'ANTdis', 'F2W_blob_dis', 'bp_F_delta',
-       'bp_W_delta', 'ap_F_delta', 'ap_W_delta', 'ant_W_delta', 'file', 'start_walk']]
+       'W2Fangle', 'ANTdis', 'F2W_blob_dis', 'file', 'start_walk']]
 
 #################
 # Preprocessing #
@@ -141,7 +142,7 @@ ros = RandomOverSampler(random_state=42)
 X_train_resampled, Y_train_resampled = ros.fit_resample(X_train.reshape(X_train.shape[0], -1), Y_train)
 
 # Reshape X_train back to its original shape
-X_train_resampled = X_train_resampled.reshape(-1, 3, 19)
+X_train_resampled = X_train_resampled.reshape(-1, 5, 14)
 
 print("Original dataset shape:", X_train.shape, Y_train.shape)
 print("Resampled dataset shape:", X_train_resampled.shape, Y_train_resampled.shape)
@@ -183,22 +184,36 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
 # Define the RNN model
+# Define the RNN model
 class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, hidden_size, output_size, intermediate_size):
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
-        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
+        
+        # Initialize RNN layer
+        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True, nonlinearity='relu')
+        
+        # Initialize the first fully connected layer
+        self.fc1 = nn.Linear(hidden_size, intermediate_size)
+        
+        # Initialize ReLU activation function
+        self.relu = nn.ReLU()
+        
+        # Initialize the second fully connected layer
+        self.fc2 = nn.Linear(intermediate_size, output_size)
 
     def forward(self, x):
         h0 = torch.zeros(1, x.size(0), self.hidden_size)
         out, _ = self.rnn(x, h0)
         
-        test_rnn_output.append(out.shape)
+        # Select the output of the last time step
+        out = out[:, -1, :]
         
-        out = self.fc(out[:, -1, :])
+        # Pass the output through the first fully connected layer and then ReLU
+        out = self.relu(self.fc1(out))
         
-        test_nnl_output.append(out.shape)
+        # Pass the output through the second fully connected layer
+        out = self.fc2(out)
         
         return out
     
@@ -241,6 +256,7 @@ def evaluate(model, val_loader, criterion, device):
     total = 0
     all_preds = []
     all_labels = []
+    all_preds_probs = []
     with torch.no_grad():
         for i, (inputs, labels) in enumerate(val_loader):
             inputs, labels = inputs.to(device), labels.to(device)
@@ -282,7 +298,7 @@ train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 # Define the model, loss function, and optimizer
-model = RNN(input_size=X_train.shape[2], hidden_size=64, output_size=2).to(device)
+model = RNN(input_size=X_train.shape[2], hidden_size=32, output_size=2, intermediate_size = 32).to(device)
 
 # Calculating weights for class imbalance to pass to the loss function
 class_counts = [pd.Series(Y_train).value_counts()[0], pd.Series(Y_train).value_counts()[1]]
@@ -292,16 +308,16 @@ weights = 1. / torch.tensor(class_counts, dtype=torch.float)
 weights = weights / weights.sum()
 
 criterion = nn.CrossEntropyLoss(weight=weights)
-optimizer = optim.SGD(model.parameters(), lr=0.0001)
+optimizer = optim.SGD(model.parameters(), lr=0.001)
 
 # Train the model
 from torch.optim.lr_scheduler import CosineAnnealingLR
 scheduler = CosineAnnealingLR(optimizer, T_max=50)
-num_epochs = 10
+num_epochs = 62
 for epoch in range(num_epochs):
     train_loss = train(model, train_loader, criterion, optimizer, device)
     test_loss, test_acc, test_f1, test_pr_auc = evaluate(model, test_loader, criterion, device)
-    scheduler.step(test_loss)
+    scheduler.step()
     print(f'Epoch {epoch+1}/{num_epochs}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, Test F1: {test_f1:.4f}, Test PR AUC: {test_pr_auc:.4f}')
 
 
@@ -401,8 +417,8 @@ plt.plot(mean_df['delta_frames'], mean_df['y_pred'])  # Plot 'y_pred' against 'd
 
 # Optional: add labels and title
 plt.xlabel('Delta Frames')
-plt.ylabel('y_pred')
-plt.title('y_pred vs Delta Frames')
+plt.ylabel('Predicted Probability')
+plt.title('Mean Predicted Probabilities for Backing by Delta Frames')
 
 plt.show()  # Display the plot)
 
