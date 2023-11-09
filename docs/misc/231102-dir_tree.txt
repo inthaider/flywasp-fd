@@ -1,0 +1,105 @@
+.
+├── README.md
+├── assets
+│   └── DALL·E 2023-10-16 17.37.46 - Photo of a solid color background with two abstract human figures. The figure on the left has elements related to physics, cosmology, and ML with the .png
+├── config
+├── data
+│   ├── external
+│   ├── interim
+│   │   ├── ff-mw-var_descriptions.txt
+│   │   └── ff-mw.pkl
+│   ├── processed
+│   │   ├── ff-mw
+│   │   └── rnn_input
+│   │       ├── 20231027
+│   │       └── fd_v0
+│   └── raw
+├── docs
+│   ├── 20231102-dir_tree.txt
+│   ├── dir_tree.txt
+│   ├── onboarding_raw.md
+│   └── project_structure.md
+├── models
+├── notebooks
+│   ├── 1.0-jh-initial-data-exploration.ipynb
+│   ├── 2.0-jh-initial-rnn-exploration.ipynb
+│   ├── 3.0-jh-initial-rnn-exploration.ipynb
+│   ├── config
+│   │   └── rnn_ff-mw_v1
+│   │       ├── 20231020_1700_config_4b1b7e97ec515d9a4dbee184212e1d3b.yaml
+│   │       └── 20231020_1701_config_971fce5d8c82c2d1bf8db68939c8162d.yaml
+│   ├── models
+│   │   └── rnn_ff-mw_v1
+│   │       ├── 20231020_1700_model_2c92c2793be07eaf3765665d6287ded4_4b1b7e97ec515d9a4dbee184212e1d3b.pt
+│   │       └── 20231020_1701_model_2c92c2793be07eaf3765665d6287ded4_971fce5d8c82c2d1bf8db68939c8162d.pt
+│   └── runs
+│       ├── Nov01_15-02-28_JbKiMacKitab
+│       │   └── events.out.tfevents.1698865348.JbKiMacKitab.49133.0
+│       ├── Nov01_15-07-59_JbKiMacKitab
+│       │   └── events.out.tfevents.1698865679.JbKiMacKitab.49133.1
+│       ├── Nov01_19-39-48_JbKiMacKitab
+│       │   └── events.out.tfevents.1698881988.JbKiMacKitab.74200.0
+│       ├── Nov01_19-40-40_JbKiMacKitab
+│       │   └── events.out.tfevents.1698882040.JbKiMacKitab.74200.1
+│       ├── Nov01_20-24-47_JbKiMacKitab
+│       ├── Nov01_20-32-13_JbKiMacKitab
+│       ├── Nov01_21-20-31_JbKiMacKitab
+│       ├── Nov01_22-25-51_JbKiMacKitab
+│       ├── Nov02_00-17-58_JbKiMacKitab
+│       │   └── events.out.tfevents.1698898678.JbKiMacKitab.6003.0
+│       ├── Nov02_00-42-02_JbKiMacKitab
+│       │   └── events.out.tfevents.1698900122.JbKiMacKitab.6003.1
+│       └── Oct27_01-18-27_JbKiMacKitab
+│           └── events.out.tfevents.1698383907.JbKiMacKitab.54575.0
+├── references
+│   ├── FD_RNN_Implementation_writeup.txt
+│   └── RNN Implementation.txt
+├── reports
+├── requirements.txt
+├── setup.py
+└── src
+    ├── RNN Implementation.py
+    ├── __init__.py
+    ├── __pycache__
+    │   └── __init__.cpython-311.pyc
+    ├── data_preprocess
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-311.pyc
+    │   │   ├── feature_engineering.cpython-311.pyc
+    │   │   ├── prep_rnn_input.cpython-311.pyc
+    │   │   ├── preprocessing.cpython-311.pyc
+    │   │   └── rnn_data_prep.cpython-311.pyc
+    │   ├── feature_engineering.py
+    │   ├── preprocessing.py
+    │   └── rnn_data_prep.py
+    ├── main.py
+    ├── misc
+    │   ├── 1.0_fd_rnn_initial_exploration.py
+    │   ├── 2.0_fd_rnn_exploration.py
+    │   ├── 3.0_fd_rnn_implementation.py
+    │   ├── main_v0.py
+    │   ├── misc_utilities.py
+    │   └── test.py
+    ├── models
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-311.pyc
+    │   │   ├── helpers_rnn.cpython-311.pyc
+    │   │   ├── rnn_model.cpython-311.pyc
+    │   │   └── train_eval.cpython-311.pyc
+    │   ├── baseline_models.py
+    │   ├── helpers_rnn.py
+    │   ├── old
+    │   │   └── rnn_model_v0.py
+    │   ├── rnn_model.py
+    │   └── train_eval.py
+    ├── utils
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-311.pyc
+    │   │   └── utilities.cpython-311.pyc
+    │   └── utilities.py
+    └── visualization
+
+44 directories, 59 files
