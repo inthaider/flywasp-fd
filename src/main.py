@@ -66,7 +66,7 @@ def main():
         batch_first=batch_first,
     )
 
-    # ============ Model evaluation, visualizataion, & analysis ============ #
+    # ============ Model evaluation, visualization, & analysis ============ #
     test_indices = rnn_data_prep.test_indices
     df = rnn_data_prep.df
     # print(test_indices)
