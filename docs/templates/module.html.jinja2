@@ -1,32 +1,32 @@
 {% extends "default/module.html.jinja2" %}
 
-{#
 {% block title %}
-    {{ module.modulename }} API documentation
-{% endblock %}
-#}
-
-{% block content %}
     {% if module.modulename == 'src' %}
-        <main class="pdoc">
-            {% block modules_body %}
-                {{ super() }}  {# Include content from parent template's modules_body block #}
-                <section>
-                    <h2>Submodules</h2>
-                    <ul>
-                        {% for submodule in module.submodules if is_public(submodule) | trim %}
-                            <li>
-                                <h3>{{ submodule.name }}</h3>
-                                {% if submodule.docstring %}
-                                    <div class="docstring">{{ submodule.docstring | to_markdown | to_html | linkify(namespace=submodule.qualname) }}</div>
-                                {% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </section>
-            {% endblock %}
-        </main>
+        Fly-Wasp Backing Prediction Documentation
     {% else %}
         {{ super() }}
     {% endif %}
+{% endblock %}
+
+{% block content %}
+    <main class="pdoc">
+    {{ super() }}  {# Include content from parent template's modules_body block #}
+        {% block modules_body %}
+            <section>
+                <h2>Submodules</h2>
+                <ul>
+                    {% for submodule in module.submodules if is_public(submodule) | trim %}
+                        <li>
+                            <h3>{{ submodule.name }}</h3>
+                            {% if submodule.docstring %}
+                                <div class="docstring">{{ submodule.docstring | to_markdown | to_html | linkify(namespace=submodule.qualname) }}</div>
+                            {% else %}
+                                <div class="docstring">No documentation available for this module.</div>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endblock %}
+    </main>
 {% endblock %}
