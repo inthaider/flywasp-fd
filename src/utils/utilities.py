@@ -38,20 +38,36 @@ def get_hash(obj):
     """
     Returns the hash value of an object as a string.
 
-    Parameters
-    ----------
-    obj : object
-        The object to hash.
+    Args:
+        obj (object): The object to hash.
 
-    Returns
-    -------
-    str
-        The hash value of the object as a string.
+    Returns:
+        str: The hash value of the object as a string.
     """
     return hashlib.sha256(str(obj).encode()).hexdigest()
 
 
 def create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path=None, interim_data_path=None, processed_data_path=None, logging_level='INFO', logging_format='%(asctime)s - %(levelname)s - %(message)s'):
+    """
+    Creates a configuration dictionary for a model.
+
+    Args:
+        model_name (str): The name of the model.
+        input_size (int): The size of the input layer.
+        hidden_size (int): The size of the hidden layer.
+        output_size (int): The size of the output layer.
+        num_epochs (int): The number of epochs for training.
+        batch_size (int): The size of the batch for training.
+        learning_rate (float): The learning rate for training.
+        raw_data_path (str, optional): The path to the raw data. Defaults to None.
+        interim_data_path (str, optional): The path to the interim data. Defaults to None.
+        processed_data_path (str, optional): The path to the processed data. Defaults to None.
+        logging_level (str, optional): The logging level. Defaults to 'INFO'.
+        logging_format (str, optional): The logging format. Defaults to '%(asctime)s - %(levelname)s - %(message)s'.
+
+    Returns:
+        dict: A dictionary containing the configuration for the model.
+    """
     config = {
         'model_name': model_name,
         'model': {
