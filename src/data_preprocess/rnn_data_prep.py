@@ -1,3 +1,22 @@
+"""
+This module contains the `DataPreprocessor` class for preprocessing a Pandas DataFrame.
+
+The `DataPreprocessor` class includes methods for loading data, saving processed data, dropping columns, rearranging columns, calculating means, adding labels, and performing other preprocessing steps. It uses the `pandas` and `numpy` libraries for data manipulation and the `logging` library for logging.
+
+Classes:
+    DataPreprocessor:
+        A class for preprocessing a Pandas DataFrame. It includes methods for loading data, saving processed data, dropping columns, rearranging columns, calculating means, adding labels, and performing other preprocessing steps.
+
+Example:
+    To prepare data for RNN training, instantiate the RNNDataPrep class and call the get_rnn_data method:
+    
+    >>> rnn_data_prep = RNNDataPrep()
+    >>> X_train, Y_train, X_test, Y_test = rnn_data_prep.get_rnn_data(sequence_length=5, split_ratio=0.7)
+
+Note:
+    The module assumes the presence of a 'data/interim/' directory containing the raw data in pickle format and a 'data/processed/rnn_input/' directory for saving processed data. The class is designed to work with time-series or sequence data, which is typical for RNN models.
+"""
+
 import logging
 import pickle
 from datetime import datetime
@@ -13,94 +32,55 @@ from src.data_preprocess.preprocessing import DataPreprocessor
 
 logger = logging.getLogger(__name__)
 
+
 class RNNDataPrep:
     """
     A class for preparing data for an RNN model.
 
-    Parameters
-    ----------
-    pickle_path : str, optional
-        The path to the .pkl file containing the raw data. Defaults to 'data/interim/ff-mw.pkl'.
-    train_test_data_par_dir : str, optional
-        The path to the directory containing the .pkl files. Defaults to 'data/processed/rnn_input/'.
-    save_train_test : bool, optional
-        Whether to save the train and test datasets as .pkl files. Defaults to False.
-    save_data : bool, optional
-        Whether to save the processed data as a .pkl file. Defaults to False.
+    Attributes:
+        pickle_path (str): The path to the raw data in pickle format.
+        train_test_data_par_dir (str): The parent directory for saving the train and test datasets.
+        save_train_test (bool): If True, the train and test datasets are saved.
+        save_data (bool): If True, the processed data is saved.
+        df_raw (pd.DataFrame): The raw data as a Pandas DataFrame.
+        df (pd.DataFrame): The processed data as a Pandas DataFrame.
+        timestamp (str): The timestamp for the current run.
+        raw_data_path (Path): The path to the raw data.
+        interim_data_path (Path): The path to the interim data.
+        processed_data_path (Path): The path to the processed data.
+        train_test_data_dir (Path): The path to the train and test datasets.
+        raw_data_id (str): The hash value of the raw data.
+        preprocessor (DataPreprocessor): The DataPreprocessor object for preprocessing the raw data.
+        feature_engineer (FeatureEngineer): The FeatureEngineer object for performing feature engineering on the preprocessed data.
+        test_indices (np.ndarray): The indices of the target values for the test sequences.
 
-    Attributes
-    ----------
-    pickle_path : str
-        The path to the .pkl file containing the raw data.
-    train_test_data_par_dir : str
-        The path to the directory containing the .pkl files.
-    save_train_test : bool
-        Whether to save the train and test datasets as .pkl files.
-    save_data : bool
-        Whether to save the processed data as a .pkl file.
-    df : pandas.DataFrame
-        The preprocessed and feature engineered data.
-    timestamp : str
-        The current timestamp.
-    raw_data_path : pathlib.Path
-        The path to the raw data file.
-    interim_data_path : pathlib.Path
-        The path to the interim data file.
-    processed_data_path : pathlib.Path
-        The path to the processed data file.
-    train_test_data_dir : pathlib.Path
-        The path to the directory containing the .pkl files.
-    raw_data_id : str
-        The ID of the raw data.
-    preprocessor : DataPreprocessor
-        The DataPreprocessor object used to preprocess the raw data.
-    feature_engineer : FeatureEngineer
-        The FeatureEngineer object used to engineer features from the preprocessed data.
-
-    Methods
-    -------
-    load_and_preprocess_data(save_data)
-        Loads the raw data and performs preprocessing and feature engineering steps.
-    prepare_rnn_data(df, sequence_length, split_ratio, rand_oversample, save_train_test)
-        Prepares the train and test datasets for the RNN model.
-    get_rnn_data(load_train_test, sequence_length, split_ratio, save_train_test, save_data)
-        Provides an interface for either loading preprocessed data or preprocessing raw data, performing feature engineering, preparing sequences and train-test splits, and saving the processed data and train-test splits.
-    _prep_train_test_seqs(df, sequence_length, split_ratio)
-        Prepares training and testing sequences for the RNN model.
-    _create_seqs(data, sequence_length)
-        Creates sequences of length `sequence_length` from the input `data`.
-    _perform_random_oversampling(X_train, Y_train)
-        Performs random oversampling to balance the class distribution.
-    _load_train_test_data()
-        Loads the train and test datasets for the RNN model from 4 .pkl files.
-    _save_train_test_data(X_train, Y_train, X_test, Y_test)
-        Saves the train and test datasets for the RNN model as .pkl files.
-
-    Notes
-    -----
-    This class provides an interface for either loading preprocessed data or preprocessing raw data, performing feature engineering, preparing sequences and train-test splits, and saving the processed data and train-test splits.
+    Methods:
+        get_rnn_data(load_processed, load_train_test, sequence_length, split_ratio, save_data, save_train_test): Provides an interface for either loading preprocessed data or preprocessing raw data, performing feature engineering, preparing sequences and train-test splits, and saving the processed data and train-test splits.
+        load_and_preprocess_data(save_data): Loads the raw data and performs preprocessing and feature engineering steps.
+        prepare_rnn_data(df, sequence_length, split_ratio, rand_oversample, save_train_test): Prepares the train and test datasets for the RNN model.
+        _prep_train_test_seqs(df, sequence_length, split_ratio): Prepares training and testing sequences for the RNN model.
+        _create_seqs(data, sequence_length, index_start): Creates sequences of length `sequence_length` from the input `data`.
+        _perform_random_oversampling(X_train, Y_train): Performs random oversampling to balance the class distribution.
+        _load_train_test_data(): Loads the train and test datasets for the RNN model from 4 .pkl files.
+        _save_train_test_data(X_train, Y_train, X_test, Y_test): Saves the train and test datasets for the RNN model as .pkl files.
     """
 
     def __init__(self, pickle_path: str = "data/interim/ff-mw.pkl", train_test_data_par_dir: str = "data/processed/rnn_input/", save_train_test: bool = False, save_data: bool = False):
         """
         Initializes the RNNDataPrep object.
 
-        Parameters
-        ----------
-        pickle_path : str
-            The path to the .pkl file containing the raw data.
-        train_test_data_dir : str, optional
-            The path to the directory containing the .pkl files, by default 'data/processed/rnn_input/'
-        save_train_test : bool, optional
-            Whether to save the train and test datasets as .pkl files. Defaults to False.
-        save_data : bool, optional
-            Whether to save the processed data as a .pkl file. Defaults to False.
+        Args:
+            pickle_path (str, optional): The path to the raw data in pickle format. Defaults to "data/interim/ff-mw.pkl".
+            train_test_data_par_dir (str, optional): The parent directory for saving the train and test datasets. Defaults to "data/processed/rnn_input/".
+            save_train_test (bool, optional): If True, the train and test datasets are saved. Defaults to False.
+            save_data (bool, optional): If True, the processed data is saved. Defaults to False.
         """
         self.pickle_path = Path(pickle_path)
         self.train_test_data_par_dir = Path(train_test_data_par_dir)
         self.save_train_test = save_train_test
         self.save_data = save_data
 
+        self.df_raw = None
         self.df = None
         self.timestamp = datetime.now().strftime("%Y%m%d")
         self.raw_data_path = None
@@ -112,76 +92,20 @@ class RNNDataPrep:
         self.feature_engineer = None
         self.test_indices = None
 
-    def load_and_preprocess_data(self, save_data: bool = None) -> pd.DataFrame:
-        """
-        Loads the raw data and performs preprocessing and feature engineering steps.
-
-        Parameters
-        ----------
-        save_data : bool, optional
-            Whether to save the processed data as a .pkl file. Defaults to None, in which case the value of self.save_data is used.
-
-        Returns
-        -------
-        pandas.DataFrame
-            The preprocessed and feature engineered data.
-        """
-        # Logging messages to indicate the start of the function
-        logger.info(
-            "\nLoading & preprocessing raw/interim data to be prepared for RNN in RNNDataPrep -> load_and_preprocess_data...")
-
-        # Set the value of self.save_data to the value of save_data if save_data is not None
-        if save_data is not None:
-            self.save_data = save_data
-
-        self.preprocessor = DataPreprocessor(
-            pickle_path=self.pickle_path, save_data=self.save_data)
-        self.raw_data_path = self.preprocessor.raw_data_path
-        self.processed_data_path = self.preprocessor.processed_data_path
-        self.raw_data_id = self.preprocessor.raw_data_id
-
-        logger.info("Loading raw/interim data...")
-        self.df = self.preprocessor.load_data()
-
-        # Perform preprocessing steps
-        logger.info("Performing preprocessing steps on raw/interim data...")
-        self.df = self.preprocessor.preprocess_data()
-        if self.df is None:
-            raise ValueError(
-                "DataFrame 'df' is None after preprocessing!!??!!")
-
-        # Perform feature engineering steps
-        logger.info(
-            "Performing feature engineering steps on preprocessed raw/interim data...")
-        self.feature_engineer = FeatureEngineer(self.df)
-        self.df = self.feature_engineer.engineer_features()
-
-        # Logging messages to indicate the end of the function
-        logger.info(
-            "Data loading, preprocessing, and feature engineering completed in RNNDataPrep -> load_and_preprocess_data.\n")
-        return self.df
-
-    def get_rnn_data(self, load_train_test: bool = False, sequence_length: int = 3, split_ratio: float = 2/3, save_train_test: bool = None, save_data: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def get_rnn_data(self, load_processed: bool = False, load_train_test: bool = False, sequence_length: int = 3, split_ratio: float = 2/3, save_data: bool = None, save_train_test: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Provides an interface for either loading preprocessed data or preprocessing raw data, performing feature engineering, preparing sequences and train-test splits, and saving the processed data and train-test splits.
 
-        Parameters
-        ----------
-        load_train_test : bool, optional
-            Whether to load preprocessed data or preprocess raw data. Defaults to False.
-        sequence_length : int, optional
-            The length of the sequences to create. Defaults to 3.
-        split_ratio : float, optional
-            The ratio of training to testing data. Defaults to 2/3.
-        save_train_test : bool, optional
-            Whether to save the train and test datasets as .pkl files. Defaults to None, in which case the value of self.save_train_test is used.
-        save_data : bool, optional
-            Whether to save the processed data as a .pkl file. Defaults to None, in which case the value of self.save_data is used.
+        Args:
+            load_processed (bool, optional): If True, preprocessed data is loaded. Defaults to False.
+            load_train_test (bool, optional): If True, train and test datasets are loaded. Defaults to False.
+            sequence_length (int, optional): The length of the sequences. Defaults to 3.
+            split_ratio (float, optional): The ratio of train to test sequences. Defaults to 2/3.
+            save_data (bool, optional): If True, the processed data is saved. Defaults to None.
+            save_train_test (bool, optional): If True, the train and test datasets are saved. Defaults to None.
 
-        Returns
-        -------
-        Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
-            The train-test splits as (X_train, Y_train, X_test, Y_test).
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: The train and test datasets as NumPy arrays.
         """
         # Logging messages to indicate the start of the function
         logger.info(
@@ -202,6 +126,23 @@ class RNNDataPrep:
             X_train, Y_train, X_test, Y_test = self._load_train_test_data()
             logger.info(
                 "Train & test datasets loaded successfully in RNNDataPrep -> get_rnn_data().")
+        elif load_processed:
+            logger.info(
+                "Load processed dataframe in RNNDataPrep -> get_rnn_data() ...")
+            self.preprocessor = DataPreprocessor(
+                pickle_path=self.pickle_path)
+            logger.info(
+                "Processed dataframe loaded successfully in RNNDataPrep -> get_rnn_data().")
+            self.raw_data_path = self.preprocessor.raw_data_path
+            self.processed_data_path = self.preprocessor.processed_data_path
+            self.raw_data_id = self.preprocessor.raw_data_id
+            self.df = self.preprocessor.load_data()
+            logger.info(
+                "Prepare RNN train & test datasets from raw/interim data in RNNDataPrep -> get_rnn_data() ...")
+            X_train, Y_train, X_test, Y_test = self.prepare_rnn_data(
+                self.df, sequence_length=sequence_length, split_ratio=split_ratio)
+            logger.info(
+                "Train & test datasets loaded successfully in RNNDataPrep -> get_rnn_data().")
         else:
             logger.info(
                 "Load raw/interim data to be preprocessed/prepared in RNNDataPrep -> get_rnn_data() ...")
@@ -220,33 +161,64 @@ class RNNDataPrep:
             "RNN train & test datasets retrieved successfully in RNNDataPrep -> get_rnn_data().\n\n")
         return X_train, Y_train, X_test, Y_test
 
+    def load_and_preprocess_data(self, save_data: bool = None) -> pd.DataFrame:
+        """
+        Loads the raw data and performs preprocessing and feature engineering steps.
+
+        Args:
+            save_data (bool, optional): If True, the processed data is saved. Defaults to None.
+
+        Returns:
+            pd.DataFrame: The processed data as a Pandas DataFrame.
+        """
+        # Logging messages to indicate the start of the function
+        logger.info(
+            "\nLoading & preprocessing raw/interim data to be prepared for RNN in RNNDataPrep -> load_and_preprocess_data...")
+
+        # Set the value of self.save_data to the value of save_data if save_data is not None
+        if save_data is not None:
+            self.save_data = save_data
+
+        self.preprocessor = DataPreprocessor(
+            pickle_path=self.pickle_path, save_data=self.save_data)
+        self.raw_data_path = self.preprocessor.raw_data_path
+        self.processed_data_path = self.preprocessor.processed_data_path
+        self.raw_data_id = self.preprocessor.raw_data_id
+
+        logger.info("Loading raw/interim data...")
+        self.df_raw = self.preprocessor.load_data()
+
+        # Perform preprocessing steps
+        logger.info("Performing preprocessing steps on raw/interim data...")
+        self.df = self.preprocessor.preprocess_data()
+        if self.df is None:
+            raise ValueError(
+                "DataFrame 'df' is None after preprocessing!!??!!")
+
+        # Perform feature engineering steps
+        logger.info(
+            "Performing feature engineering steps on preprocessed raw/interim data...")
+        self.feature_engineer = FeatureEngineer(self.df)
+        self.df = self.feature_engineer.engineer_features()
+
+        # Logging messages to indicate the end of the function
+        logger.info(
+            "Data loading, preprocessing, and feature engineering completed in RNNDataPrep -> load_and_preprocess_data.\n")
+        return self.df
+
     def prepare_rnn_data(self, df: pd.DataFrame, sequence_length: int = 3, split_ratio: float = 2/3, rand_oversample: bool = False, save_train_test: bool = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Prepares the train and test datasets for the RNN model.
 
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            The DataFrame to use for preparing the train and test datasets.
-        sequence_length : int, optional
-            The length of the sequences to create. Defaults to 3.
-        split_ratio : float, optional
-            The ratio of training to testing data. Defaults to 2/3.
-        rand_oversample : bool, optional
-            Whether to perform random oversampling to balance the class distribution. Defaults to False.
-        save_train_test : bool, optional
-            Whether to save the train and test datasets as .pkl files. Defaults to None, in which case the value of self.save_train_test is used.
+        Args:
+            df (pd.DataFrame): The DataFrame to prepare the train and test datasets from.
+            sequence_length (int, optional): The length of the sequences. Defaults to 3.
+            split_ratio (float, optional): The ratio of train to test sequences. Defaults to 2/3.
+            rand_oversample (bool, optional): If True, random oversampling is performed to balance the class distribution. Defaults to False.
+            save_train_test (bool, optional): If True, the train and test datasets are saved. Defaults to None.
 
-        Returns
-        -------
-        X_train : numpy.ndarray
-            The training input sequences.
-        Y_train : numpy.ndarray
-            The training target values.
-        X_test : numpy.ndarray
-            The testing input sequences.
-        Y_test : numpy.ndarray
-            The testing target values.
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: The train and test datasets as NumPy arrays.
         """
         # Logging messages to indicate the start of the function
         logger.info(
@@ -280,33 +252,20 @@ class RNNDataPrep:
         """
         Prepares training and testing sequences for the RNN model.
 
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            The DataFrame to use for preparing the train and test datasets.
-        sequence_length : int
-            The length of the sequences to create.
-        split_ratio : float
-            The ratio of training to testing data.
+        Args:
+            df (pd.DataFrame): The DataFrame to prepare the train and test datasets from.
+            sequence_length (int): The length of the sequences.
+            split_ratio (float): The ratio of train to test sequences.
 
-        Returns
-        -------
-        X_train : numpy.ndarray
-            The training input sequences.
-        Y_train : numpy.ndarray
-            The training target values.
-        X_test : numpy.ndarray
-            The testing input sequences.
-        Y_test : numpy.ndarray
-            The testing target values.
-        test_indices : numpy.ndarray
-            The indices of the target values in the original test data.
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: The train and test datasets as NumPy arrays.
         """
         logger.info(
             "\nStarting to prepare train and test sequences in RNNDataPrep -> _prep_train_test_seqs...")
 
         # Initial checks and setup
-        assert isinstance(self.df, pd.DataFrame), "df must be a pandas DataFrame."
+        assert isinstance(
+            self.df, pd.DataFrame), "df must be a pandas DataFrame."
         assert isinstance(
             sequence_length, int), "sequence_length must be an integer."
         assert isinstance(split_ratio, float), "split_ratio must be a float."
@@ -346,7 +305,8 @@ class RNNDataPrep:
         X_test = np.zeros((test_size, sequence_length, input_dim - 1))
         Y_test = np.zeros(test_size)
         # Calculate and store the min indices for each file
-        min_indices = df.groupby('file').apply(lambda x: x.index.min()).to_dict()
+        min_indices = df.groupby('file').apply(
+            lambda x: x.index.min()).to_dict()
         test_indices = np.zeros(test_size, dtype=int)
 
         logger.debug("Pre-allocated NumPy arrays for train and test sets.")
@@ -391,7 +351,7 @@ class RNNDataPrep:
             # In the line below, idx[file_train_size:] is used to get the indices of the target values for the test sequences
             # and we add these to test_indices for the index range corresponding to the current file
             test_indices[test_idx:test_end_idx] = idx[file_train_size:]
-            
+
             # Update the indices for the next iteration
             train_idx = train_end_idx
             test_idx = test_end_idx
@@ -413,31 +373,21 @@ class RNNDataPrep:
         self.test_indices = test_indices
         return X_train, Y_train, X_test, Y_test, test_indices
 
-
     def _create_seqs(self, data: np.ndarray, sequence_length: int = 5, index_start: int = 0) -> Tuple[np.ndarray, np.ndarray]:
         """
         Creates sequences of length `sequence_length` from the input `data`.
 
-        Parameters
-        ----------
-        data : numpy.ndarray
-            The input data, with shape `(n_samples, n_features)`.
-        sequence_length : int
-            The length of the sequences to create. Defaults to 5.
+        Args:
+            data (np.ndarray): The input data.
+            sequence_length (int, optional): The length of the sequences. Defaults to 5.
+            index_start (int, optional): The starting index for the sequences. Defaults to 0.
 
-        Returns
-        -------
-        x : numpy.ndarray
-            The input sequences, with shape `(n_samples - sequence_length, sequence_length, n_features)`.
-        y : numpy.ndarray
-            The target values, with shape `(n_samples - sequence_length,)`.
-        target_indices : numpy.ndarray
-            The indices of the target values in the original data.
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: The sequences and target values as NumPy arrays.
 
-        Notes
-        -----
-        This function creates sequences of length `sequence_length` from the input `data`. Each sequence consists of `sequence_length`
-        consecutive rows of `data`, and the target value for each sequence is the value in the last row of the sequence.
+        Note:
+            This function creates sequences of length `sequence_length` from the input `data`. Each sequence consists of `sequence_length`
+            consecutive rows of `data`, and the target value for each sequence is the value in the last row of the sequence.
         """
         n = len(data) - sequence_length
         # -1 because we're dropping the target column in x
@@ -471,19 +421,12 @@ class RNNDataPrep:
         """
         Performs random oversampling to balance the class distribution.
 
-        Parameters
-        ----------
-        X_train : numpy.ndarray
-            The training input sequences.
-        Y_train : numpy.ndarray
-            The training target values.
+        Args:
+            X_train (np.ndarray): The training data.
+            Y_train (np.ndarray): The training target values.
 
-        Returns
-        -------
-        X_train_resampled : numpy.ndarray
-            The resampled training input sequences.
-        Y_train_resampled : numpy.ndarray
-            The resampled training target values.
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: The resampled training data and target values as NumPy arrays.
         """
         # Logging messages to indicate the start of the function
         logger.info(
@@ -511,10 +454,8 @@ class RNNDataPrep:
         """
         Loads the train and test datasets for the RNN model from 4 .pkl files.
 
-        Returns
-        -------
-        Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
-            The train-test splits as (X_train, Y_train, X_test, Y_test).
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: The train and test datasets as NumPy arrays.
         """
         # Logging messages to indicate the start of the function
         logger.info("\nLoading train and test datasets...")
@@ -541,21 +482,14 @@ class RNNDataPrep:
         """
         Saves the train and test datasets for the RNN model as .pkl files.
 
-        Parameters
-        ----------
-        X_train : numpy.ndarray
-            The training input sequences.
-        Y_train : numpy.ndarray
-            The training target values.
-        X_test : numpy.ndarray
-            The testing input sequences.
-        Y_test : numpy.ndarray
-            The testing target values.
+        Args:
+            X_train (np.ndarray): The training data.
+            Y_train (np.ndarray): The training target values.
+            X_test (np.ndarray): The testing data.
+            Y_test (np.ndarray): The testing target values.
 
-        Returns
-        -------
-        str
-            The path to the directory containing the saved train-test splits.
+        Returns:
+            str: The path to the train and test datasets.
         """
         # Logging messages to indicate the start of the function
         logger.info("\nSaving train and test datasets...")

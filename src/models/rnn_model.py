@@ -1,3 +1,27 @@
+"""
+This module contains the implementation of a Recurrent Neural Network (RNN) model for time series prediction.
+
+It includes the `RNN` class for the model, the `WalkDataset` class for the dataset, and several helper functions for initializing the weights of the model parameters, loading the training and testing data into PyTorch DataLoader objects, initializing the weights for the CrossEntropyLoss function, and configuring the model for training.
+
+Classes:
+    RNN:
+        A class representing the RNN model.
+    WalkDataset:
+        A class representing the dataset.
+
+Functions:
+    init_param_weights(m):
+        Initializes the weights of the model parameters.
+    data_loaders(X_train, Y_train, X_test, Y_test, batch_size):
+        Loads the training and testing data into PyTorch DataLoader objects.
+    _init_cross_entropy_weights(Y_train):
+        Initializes the weights for the CrossEntropyLoss function.
+    loss_function(Y_train):
+        Returns the CrossEntropyLoss function with weights.
+    configure_model(Y_train, input_size, hidden_size, output_size, learning_rate, device, batch_first=True):
+        Configures an RNN model for training.
+"""
+
 import logging
 from datetime import datetime
 
@@ -10,6 +34,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader, Dataset
 
 logger = logging.getLogger(__name__)
+
 
 class RNN(nn.Module):
     """

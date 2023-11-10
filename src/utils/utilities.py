@@ -1,3 +1,24 @@
+"""
+This module contains utility functions for data preprocessing and feature engineering.
+
+It includes functions for hashing objects, creating configuration dictionaries, and engineering features for a DataFrame. The feature engineering function uses the `FeatureEngineer` class from the `src.data_preprocess.feature_engineering` module.
+
+Functions:
+    get_hash(obj) -> str: 
+        Returns the hash value of an object as a string.
+    create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path, interim_data_path, processed_data_path, logging_level, logging_format) -> dict: 
+        Creates a configuration dictionary with the provided parameters.
+
+Example:
+    To use the feature engineering function, you can pass a pandas DataFrame:
+    
+    >>> df = pd.DataFrame(data)
+    >>> engineered_df = engineer_features(df)
+
+Note:
+    The module expects a specific structure for the input dataframe as required by the FeatureEngineer class for the standardization of features.
+"""
+
 import hashlib
 import logging
 import pickle
@@ -55,48 +76,3 @@ def create_config_dict(model_name, input_size, hidden_size, output_size, num_epo
         'processed_data_path': processed_data_path
     }
     return config
-
-
-############
-# NEW FUNCTIONS
-############
-
-def engineer_features(df):
-    """
-    Performs feature engineering steps on the input DataFrame.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The input DataFrame.
-
-    Returns
-    -------
-    pandas.DataFrame
-        The feature-engineered DataFrame.
-    """
-    feature_engineer = FeatureEngineer(df=df)
-    feature_engineer.standardize_features(
-        [
-            "Fdis",
-            "FdisF",
-            "FdisL",
-            "Wdis",
-            "WdisF",
-            "WdisL",
-            "Fangle",
-            "Wangle",
-            "F2Wdis",
-            "F2Wdis_rate",
-            "F2Wangle",
-            "W2Fangle",
-            "ANTdis",
-            "F2W_blob_dis",
-            "bp_F_delta",
-            "bp_W_delta",
-            "ap_F_delta",
-            "ap_W_delta",
-            "ant_W_delta",
-        ]
-    )  # Standardize the selected features
-    return feature_engineer.df
