@@ -7,6 +7,8 @@ data/interim/*
 data/processed/*
 data/raw/*
 
+notebooks/data/*
+
 **/__pycache__/
 __pycache__/
 */__pycache__/
