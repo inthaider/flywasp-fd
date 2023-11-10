@@ -1,19 +1,22 @@
 """
-This module contains functions for visualizing the results of an RNN model.
+This module contains functions for visualizing the results of an RNN
+model.
 
 Functions:
-    plot_predicted_probabilities(df, test_indices, test_labels_and_probs)
-        -> pd.DataFrame, pd.DataFrame: Plots the predicted probabilities using
-            the _make_df_for_plotting(), _process_df_for_plotting(), and
-            _calculate_and_plot_means() functions.
-    _make_df_for_plotting(df, test_indices, test_true_labels, test_pred_probs)
-        -> pd.DataFrame: Creates a DataFrame for plotting.
-    _process_df_for_plotting(plot_df) -> pd.DataFrame: Processes the DataFrame
-        for plotting.
-    _flag_frames(df, frame_distance=200) -> pd.DataFrame: Flags frames that
-        are within frame_distance of the start frame.
-    _calculate_and_plot_means(plot_df) -> pd.DataFrame: Calculates and plots
-        the means.
+    plot_predicted_probabilities(
+        df, test_indices, test_labels_and_probs
+    ) -> pd.DataFrame, pd.DataFrame: Plots the predicted probabilities
+        using the _make_df_for_plotting(), _process_df_for_plotting(),
+        and _calculate_and_plot_means() functions.
+    _make_df_for_plotting(
+        df, test_indices, test_true_labels, test_pred_probs
+    ) -> pd.DataFrame: Creates a DataFrame for plotting.
+    _process_df_for_plotting(plot_df) -> pd.DataFrame: Processes the
+        DataFrame for plotting.
+    _flag_frames(df, frame_distance=200) -> pd.DataFrame: Flags frames
+        that are within frame_distance of the start frame.
+    _calculate_and_plot_means(plot_df) -> pd.DataFrame: Calculates and
+        plots the means.
 """
 
 import logging
@@ -27,18 +30,20 @@ logger = logging.getLogger(__name__)
 def plot_predicted_probabilities(df, test_indices, test_labels_and_probs):
     """
     Plot the predicted probabilities using the _make_df_for_plotting(),
-    _process_df_for_plotting(), and _calculate_and_plot_means() functions.
+    _process_df_for_plotting(), and _calculate_and_plot_means()
+    functions.
 
     Args:
         df (pandas.DataFrame): The DataFrame containing the data.
         test_indices (numpy.ndarray): The indices of the test data.
-        test_labels_and_probs (numpy.ndarray): A numpy array containing the
-            true labels, predicted labels, and predicted probabilities.
+        test_labels_and_probs (numpy.ndarray): A numpy array containing
+            the true labels, predicted labels, and predicted
+            probabilities.
 
     Returns:
-        plot_df (pandas.DataFrame): The processed DataFrame for plotting.
-        mean_df (pandas.DataFrame): The DataFrame containing the calculated
-            means.
+        plot_df (pandas.DataFrame): The processed DataFrame for
+        plotting. mean_df (pandas.DataFrame): The DataFrame containing
+            the calculated means.
     """
     # Unpack the test_labels_and_probs numpy array
     test_true_labels = test_labels_and_probs[0]
@@ -65,11 +70,13 @@ def _make_df_for_plotting(df, test_indices, test_true_labels, test_pred_probs):
     probabilities with the original DataFrame.
 
     Args:
-        df (pandas.DataFrame): The original DataFrame containing the data.
+        df (pandas.DataFrame): The original DataFrame containing the
+            data.
         test_indices (numpy.ndarray): The indices of the test data.
-        test_true_labels (numpy.ndarray): The true labels of the test data.
-        test_pred_probs (numpy.ndarray): The predicted probabilities of the
-            test data.
+        test_true_labels (numpy.ndarray): The true labels of the test
+            data.
+        test_pred_probs (numpy.ndarray): The predicted probabilities of
+            the test data.
 
     Returns:
         plot_df (pandas.DataFrame): The merged DataFrame for plotting.
@@ -91,25 +98,29 @@ def _process_df_for_plotting(plot_df):
     """
     Processes a DataFrame for plotting the predicted probabilities.
 
-    This function sorts the DataFrame by file and frame, flags frames, assigns
-    a unique group number to each file group, and calculates the delta frames.
+    This function sorts the DataFrame by file and frame, flags frames,
+    assigns a unique group number to each file group, and calculates the
+    delta frames.
 
     Args:
         plot_df (pandas.DataFrame): The DataFrame to process.
 
     Returns:
-        plot_df (pandas.DataFrame): The processed DataFrame for plotting.
+        plot_df (pandas.DataFrame): The processed DataFrame for
+            plotting.
 
     TODO:
-        What exactly is plot_df_2 and what do we mean by "plot of predicted
-        probabilities 1 second before and after a true backing event"?
+        What exactly is plot_df_2 and what do we mean by "plot of
+        predicted probabilities 1 second before and after a true backing
+        event"?
     """
     plot_df = plot_df.sort_values(by=["file", "Frame"])
 
     # Apply the custom function to each file group
     plot_df = _flag_frames(plot_df)
 
-    # Create a new column that assigns a unique group number to each file group
+    # Create a new column that assigns a unique group number to each
+    # file group
     plot_df["group_number"] = plot_df["flag"].diff().ne(0).cumsum()
 
     # First, create a mask where Frame equals start_frame
@@ -139,18 +150,19 @@ def _flag_frames(df, frame_distance=200):
     """
     Flags frames that are within a certain distance of the start frame.
 
-    This function applies the __flag_frames function to each file group in the
-    DataFrame. The __flag_frames function flags frames that are within
-    frame_distance of the start frame, where the start frame is the frame
-    where 'start_walk' equals 1.
+    This function applies the __flag_frames function to each file group
+    in the DataFrame. The __flag_frames function flags frames that are
+    within frame_distance of the start frame, where the start frame is
+    the frame where 'start_walk' equals 1.
 
     Args:
         df (pandas.DataFrame): The DataFrame to flag frames in.
-        frame_distance (int, optional): The distance from the start frame to
-            flag frames within. Default is 200.
+        frame_distance (int, optional): The distance from the start
+            frame to flag frames within. Default is 200.
 
     Returns:
-        flagged_df (pandas.DataFrame): The DataFrame with flagged frames.
+        flagged_df (pandas.DataFrame): The DataFrame with flagged
+            frames.
     """
 
     def __flag_frames(group, frame_distance=200):
@@ -160,8 +172,9 @@ def _flag_frames(df, frame_distance=200):
         # Indices where 'start_frame' equals 'Frame'
         start_indices = group.index[group["start_walk"] == 1]
         for idx in start_indices:
-            # Flag frames that are within frame_distance of the start frame,
-            # which in this case is the frame where 'start_walk' equals 1
+            # Flag frames that are within frame_distance of the start
+            # frame, which in this case is the frame where 'start_walk'
+            # equals 1
             mask = (
                 group["Frame"] >= group.loc[idx, "Frame"] - frame_distance
             ) & (group["Frame"] <= group.loc[idx, "Frame"])
@@ -179,17 +192,17 @@ def _flag_frames(df, frame_distance=200):
 
 def _calculate_and_plot_means(plot_df):
     """
-    Calculates the mean predicted probabilities for each delta frame and plots
-    the results.
+    Calculates the mean predicted probabilities for each delta frame and
+    plots the results.
 
-    This function selects the rows where 'flag' equals 1, calculates the delta
-    frames, selects the necessary columns, calculates the mean predicted
-    probabilities for each delta frame, and plots the mean predicted
-    probabilities against the delta frames.
+    This function selects the rows where 'flag' equals 1, calculates the
+    delta frames, selects the necessary columns, calculates the mean
+    predicted probabilities for each delta frame, and plots the mean
+    predicted probabilities against the delta frames.
 
     Args:
-        plot_df (pandas.DataFrame): The DataFrame to calculate and plot means
-            from.
+        plot_df (pandas.DataFrame): The DataFrame to calculate and plot
+            means from.
 
     Returns:
         mean_df (pandas.DataFrame): The DataFrame containing the mean
@@ -226,9 +239,9 @@ def _calculate_and_plot_means(plot_df):
     )
 
     #
-    # Plot of predictions within 200 frames (5 seconds)
-    # Assuming mean_df is your DataFrame and it has columns 'delta_frames'
-    # and 'y_test_pred_prob'
+    # Plot of predictions within 200 frames (5 seconds) Assuming mean_df
+    # is your DataFrame and it has columns 'delta_frames' and
+    # 'y_test_pred_prob'
     #
     # Plot mean predicted probabilities against delta frames
     plt.figure(figsize=(10, 6))

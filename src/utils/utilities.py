@@ -1,20 +1,33 @@
 """
-This module contains utility functions for data preprocessing and feature engineering.
+This module contains utility functions for data preprocessing and
+feature engineering.
 
-It includes functions for hashing objects, creating configuration dictionaries, and engineering features for a DataFrame. The feature engineering function uses the `FeatureEngineer` class from the `src.data_preprocess.feature_engineering` module.
+It includes functions for hashing objects, creating configuration
+dictionaries, and engineering features for a DataFrame. The feature
+engineering function uses the `FeatureEngineer` class from the
+`src.data_preprocess.feature_engineering` module.
 
 Functions:
-    get_hash(obj) -> str: Returns the hash value of an object as a string.
-    create_config_dict(model_name, input_size, hidden_size, output_size, num_epochs, batch_size, learning_rate, raw_data_path, interim_data_path, processed_data_path, logging_level, logging_format) -> dict: Creates a configuration dictionary with the provided parameters.
+    get_hash(obj) -> str: Returns the hash value of an object as a
+        string.
+    create_config_dict(
+        model_name, input_size, hidden_size, output_size, num_epochs,
+        batch_size, learning_rate, raw_data_path, interim_data_path,
+        processed_data_path, logging_level, logging_format
+    ) -> dict: Creates a configuration dictionary with the provided
+        parameters.
 
 Example:
-    To use the feature engineering function, you can pass a pandas DataFrame:
+    To use the feature engineering function, you can pass a pandas
+    DataFrame:
 
     >>> df = pd.DataFrame(data)
     >>> engineered_df = engineer_features(df)
 
 Note:
-    The module expects a specific structure for the input dataframe as required by the FeatureEngineer class for the standardization of features.
+    The module expects a specific structure for the input dataframe as
+    required by the FeatureEngineer class for the standardization of
+    features.
 """
 
 import hashlib
@@ -61,11 +74,16 @@ def create_config_dict(
         num_epochs (int): The number of epochs for training.
         batch_size (int): The size of the batch for training.
         learning_rate (float): The learning rate for training.
-        raw_data_path (str, optional): The path to the raw data. Defaults to None.
-        interim_data_path (str, optional): The path to the interim data. Defaults to None.
-        processed_data_path (str, optional): The path to the processed data. Defaults to None.
-        logging_level (str, optional): The logging level. Defaults to 'INFO'.
-        logging_format (str, optional): The logging format. Defaults to '%(asctime)s - %(levelname)s - %(message)s'.
+        raw_data_path (str, optional): The path to the raw data.
+            Defaults to None.
+        interim_data_path (str, optional): The path to the interim data.
+            Defaults to None.
+        processed_data_path (str, optional): The path to the processed
+            data. Defaults to None.
+        logging_level (str, optional): The logging level. Defaults to
+            'INFO'.
+        logging_format (str, optional): The logging format. Defaults to
+            '%(asctime)s - %(levelname)s - %(message)s'.
 
     Returns:
         dict: A dictionary containing the configuration for the model.

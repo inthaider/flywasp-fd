@@ -1,31 +1,30 @@
 """
-This module contains the implementation of a Recurrent Neural Network (RNN)
- model for time series prediction.
+This module contains the implementation of a Recurrent Neural Network
+(RNN) model for time series prediction.
 
-It includes the `RNN` class for the model, the `WalkDataset` class for the
-dataset, and several helper functions for initializing the weights of the
-model parameters, loading the training and testing data into PyTorch
-DataLoader objects, initializing the weights for the CrossEntropyLoss
-function, and configuring the model for training.
+It includes the `RNN` class for the model, the `WalkDataset` class for
+the dataset, and several helper functions for initializing the weights
+of the model parameters, loading the training and testing data into
+PyTorch DataLoader objects, initializing the weights for the
+CrossEntropyLoss function, and configuring the model for training.
 
 Classes:
-    RNN:
-        A class representing the RNN model.
-    WalkDataset:
-        A class representing the dataset.
+    RNN: A class representing the RNN model.
+    WalkDataset: A class representing the dataset.
 
 Functions:
-    init_param_weights(m):
-        Initializes the weights of the model parameters.
-    data_loaders(X_train, Y_train, X_test, Y_test, batch_size):
-        Loads the training and testing data into PyTorch DataLoader objects.
-    _init_cross_entropy_weights(Y_train):
-        Initializes the weights for the CrossEntropyLoss function.
-    loss_function(Y_train):
-        Returns the CrossEntropyLoss function with weights.
-    configure_model(Y_train, input_size, hidden_size, output_size,
-                learning_rate, device, batch_first=True):
-        Configures an RNN model for training.
+    init_param_weights(m): Initializes the weights of the model
+        parameters.
+    data_loaders(X_train, Y_train, X_test, Y_test, batch_size): Loads
+        the training and testing data into PyTorch DataLoader objects.
+    _init_cross_entropy_weights(Y_train): Initializes the weights for
+        the CrossEntropyLoss function.
+    loss_function(Y_train): Returns the CrossEntropyLoss function with
+        weights.
+    configure_model(
+        Y_train, input_size, hidden_size, output_size,
+        learning_rate, device, batch_first=True
+    ): Configures an RNN model for training.
 """
 
 import logging
@@ -50,7 +49,8 @@ class RNN(nn.Module):
         hidden_size (int): The number of features in the hidden state.
         output_size (int): The number of output features.
         batch_first (bool, optional): If True, then the input and output
-            tensors are provided as (batch, seq, feature). Default is True.
+            tensors are provided as (batch, seq, feature). Default is
+            True.
     """
 
     def __init__(self, input_size, hidden_size, output_size, batch_first=True):
@@ -58,11 +58,14 @@ class RNN(nn.Module):
         Initialize the RNN model.
 
         Args:
-            input_size (int): The number of expected features in the input.
-            hidden_size (int): The number of features in the hidden state.
+            input_size (int): The number of expected features in the
+                input.
+            hidden_size (int): The number of features in the hidden
+                state.
             output_size (int): The number of output features.
-            batch_first (bool, optional): If True, then the input and output
-                tensors are provided as (batch, seq, feature). Default is True.
+            batch_first (bool, optional): If True, then the input and
+                output tensors are provided as (batch, seq, feature).
+                Default is True.
         """
         # Get the current timestamp as a string in the format YYYYMMDD
         self.timestamp = datetime.now().strftime("%Y%m%d")
@@ -73,12 +76,12 @@ class RNN(nn.Module):
         # Set the hidden_size attribute of the RNN object
         self.hidden_size = hidden_size
 
-        # Create an RNN layer with the specified input_size, hidden_size, and
-        #  batch_first parameters
+        # Create an RNN layer with the specified input_size,
+        #  hidden_size, and batch_first parameters
         self.rnn = nn.RNN(input_size, hidden_size, batch_first=batch_first)
 
-        # Create a linear layer with the specified hidden_size and output_size
-        #  parameters
+        # Create a linear layer with the specified hidden_size and
+        #  output_size parameters
         self.fc = nn.Linear(hidden_size, output_size)
 
         # Create a sigmoid activation function
@@ -95,8 +98,8 @@ class RNN(nn.Module):
             torch.Tensor: The output data.
 
         Notes:
-            Using `.to(x.device)` in the `forward()` method ensures that the
-            model is moved to the same device as the input data.
+            Using `.to(x.device)` in the `forward()` method ensures that
+            the model is moved to the same device as the input data.
         """
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(
             x.device
@@ -148,11 +151,11 @@ class WalkDataset(Dataset):
             idx (int): The index of the item to return.
 
         Returns:
-            tuple: A tuple containing the input data at the given index and the
-                target data at the given index.
+            tuple: A tuple containing the input data at the given index
+                and the target data at the given index.
         """
-        # Return a tuple containing the input and target data at the given
-        #  index
+        # Return a tuple containing the input and target data at the
+        #  given index
         return self.X[idx], self.Y[idx]
 
 
@@ -160,15 +163,16 @@ def init_param_weights(m):
     """
     Optional function for weight initialization.
 
-    Uses Xavier uniform initialization for weights and constant initialization
-    for biases.
+    Uses Xavier uniform initialization for weights and constant
+    initialization for biases.
 
     Args:
-        m (torch.nn.Module): The module to initialize. Only applies to Linear
-            layers.
+        m (torch.nn.Module): The module to initialize. Only applies to
+        Linear layers.
     """
-    # If the module is a linear layer, initialize the weights with Xavier
-    #  uniform initialization and the biases with a constant value of 0.01
+    # If the module is a linear layer, initialize the weights with
+    #  Xavier uniform initialization and the biases with a constant
+    #  value of 0.01
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
@@ -186,8 +190,8 @@ def data_loaders(X_train, Y_train, X_test, Y_test, batch_size):
         batch_size (int): The batch size.
 
     Returns:
-        tuple: A tuple containing the training data loader and the testing
-            data loader.
+        tuple: A tuple containing the training data loader and the
+            testing data loader.
     """
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
@@ -229,10 +233,11 @@ def loss_function(Y_train):
         Y_train (numpy.ndarray): The training target data.
 
     Returns:
-        tuple: A tuple containing the loss function and the weights for the
-            cross entropy loss function.
+        tuple: A tuple containing the loss function and the weights for
+            the cross entropy loss function.
     """
-    # Calculating weights for class imbalance to pass to the loss function
+    # Calculating weights for class imbalance to pass to the loss
+    # function
     cross_entropy_weights = _init_cross_entropy_weights(Y_train)
 
     # Using CrossEntropyLoss as the loss function with weights
@@ -261,12 +266,13 @@ def configure_model(
         learning_rate (float): The learning rate.
         device (str): The device to use for training.
         batch_first (bool, optional): If True, then the input and output
-            tensors are provided as (batch, seq, feature). Default is True.
+            tensors are provided as (batch, seq, feature). Default is
+            True.
 
     Returns:
         tuple: A tuple containing the RNN model, the loss function, the
-            optimizer, the learning rate scheduler, and the weights for the
-            CrossEntropyLoss function.
+            optimizer, the learning rate scheduler, and the weights for
+            the CrossEntropyLoss function.
     """
     # Create the RNN model
     model = RNN(

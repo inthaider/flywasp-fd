@@ -1,34 +1,35 @@
 """
-This module contains functions for training and evaluating a Recurrent Neural
-Network (RNN) model.
+This module contains functions for training and evaluating a Recurrent
+Neural Network (RNN) model.
 
-It includes functions for training the model for a specified number of epochs,
-training the model for one epoch, and evaluating the model on a test dataset.
-It also includes helper functions for debugging the model during training,
-such as checking for NaN and inf values in the input tensor, the gradients of
-the model, and the loss value, and computing the sum of squared gradients and
-parameters for the model.
+It includes functions for training the model for a specified number of
+epochs, training the model for one epoch, and evaluating the model on a
+test dataset. It also includes helper functions for debugging the model
+during training, such as checking for NaN and inf values in the input
+tensor, the gradients of the model, and the loss value, and computing
+the sum of squared gradients and parameters for the model.
 
 Functions:
     train_eval_model(
-        X_train, Y_train, X_test, Y_test, input_size, hidden_size,output_size,
-        num_epochs, batch_size, learning_rate, device, batch_first=True,
-        prints_per_epoch=10
+        X_train, Y_train, X_test, Y_test, input_size,
+        hidden_size,output_size, num_epochs, batch_size, learning_rate,
+        device, batch_first=True, prints_per_epoch=10
     ) -> (torch.nn.Module, numpy.ndarray):
         Trains the RNN model and evaluates it on a test dataset.
     train_loop(
-        model, batch_size, device, prints_per_epoch, train_loader,criterion,
-        optimizer, epoch
+        model, batch_size, device, prints_per_epoch,
+        train_loader,criterion, optimizer, epoch
     ) -> (float, float):
         Trains an RNN model on a training dataset for one epoch.
     test_loop(model, device, test_loader, criterion) -> (
         float, float, float, float, numpy.ndarray
     ):
-        Evaluates the performance of a trained RNN model on a test dataset.
+        Evaluates the performance of a trained RNN model on a test
+        dataset.
 
 Example:
-    To train and evaluate an RNN model with the provided functions, you would
-    set up your data and hyperparameters, and then call:
+    To train and evaluate an RNN model with the provided functions, you
+    would set up your data and hyperparameters, and then call:
 
     >>> model, labels_and_probs = train_eval_model(
         X_train, Y_train, X_test, Y_test, input_size=10, hidden_size=20,
@@ -37,10 +38,10 @@ Example:
     )
 
 Note:
-    The training process is logged using TensorBoard, allowing for real-time
-    monitoring of various metrics. It is assumed that the input data is
-    preprocessed and formatted as NumPy arrays suitable for input to an RNN
-    model.
+    The training process is logged using TensorBoard, allowing for
+    real-time monitoring of various metrics. It is assumed that the
+    input data is preprocessed and formatted as NumPy arrays suitable
+    for input to an RNN model.
 """
 
 import logging
@@ -93,18 +94,15 @@ def train_eval_model(
         batch_size (int): The batch size.
         learning_rate (float): The learning rate.
         device (str): The device to use for training.
-        batch_first (bool, optional):
-            If True, then the input and output tensors are provided as
-            (batch, seq, feature). Default is True.
-            (batch, seq, feature). Default is True.
-        prints_per_epoch (int, optional):
-            The number of times to print the loss per epoch. Default is 10.
+        batch_first (bool, optional): If True, then the input and output
+            tensors are provided as (batch, seq, feature). Default is True.
+        prints_per_epoch (int, optional): The number of times to print
+            the loss per epoch. Default is 10.
 
     Returns:
         model (torch.nn.Module): The trained RNN model.
-        labels_and_probs (numpy.ndarray):
-            A numpy array containing the true labels, predicted labels, and
-            predicted probabilities.
+        labels_and_probs (numpy.ndarray): A numpy array containing the
+            true labels, predicted labels, and predicted probabilities.
     """
     # Create the data loaders
     train_loader, test_loader = data_loaders(
@@ -130,9 +128,9 @@ def train_eval_model(
     # Create a SummaryWriter for logging to TensorBoard
     writer = SummaryWriter()
 
-    ################################
-    # Train and evaluate the model #
-    ################################
+    # **************************************************************** #
+    #                   TRAIN AND EVALUATE THE MODEL                   #
+    # **************************************************************** #
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}\n-------------------------------")
 
@@ -161,8 +159,9 @@ def train_eval_model(
         # Update the learning rate
         scheduler.step()
         # According to GitHub Copilot, CosineAnnealingLR does not take a
-        # metric as an argument so it shouldn't be necessary to pass the test
-        # loss to the scheduler (like below) scheduler.step(test_loss)
+        # metric as an argument so it shouldn't be necessary to pass the
+        # test loss to the scheduler (like below)
+        # scheduler.step(test_loss)
 
         # Log loss and accuracy to TensorBoard
         writer.add_scalar("Train Loss", train_loss, epoch)
@@ -184,8 +183,8 @@ def train_eval_model(
             f"Test PR AUC: {test_pr_auc:.4f}\n"
         )
 
-    # Flush the SummaryWriter
-    # doing this ensures that the metrics are written to disk
+    # Flush the SummaryWriter doing this ensures that the metrics are
+    # written to disk
     writer.flush()
     # Close the SummaryWriter
     writer.close()
@@ -212,7 +211,8 @@ def train_loop(
         device (str): The device to use for training.
         prints_per_epoch (int): The number of times to print the loss
             per epoch.
-        train_loader (torch.utils.data.DataLoader): The training data loader.
+        train_loader (torch.utils.data.DataLoader): The training data
+            loader.
         criterion (torch.nn.modules.loss._Loss): The loss function.
         optimizer (torch.optim.Optimizer): The optimizer.
         epoch (int): The current epoch number.
@@ -227,10 +227,9 @@ def train_loop(
     print_interval = int(max(num_batches // prints_per_epoch, 1))
     # --------------------#
     print(f"Print interval: {print_interval}")  # Debugging line
-    # --------------------#
-    # Set the model to training mode - important for batch normalization and
-    # dropout layers
-    # This is best practice, but is it necessary here in this situation?
+    # --------------------# Set the model to training mode - important
+    # for batch normalization and dropout layers This is best practice,
+    # but is it necessary here in this situation?
     model.train()
     # Initialize running loss & sum of squared gradients and parameters
     running_loss = 0.0
@@ -246,7 +245,8 @@ def train_loop(
         # Debugging: Check for NaN or inf in inputs
         debug_input_nan_inf(inputs)
 
-        # Note that i is the index of the batch and goes up to num_batches - 1
+        # Note that i is the index of the batch and goes up to
+        # num_batches - 1
         inputs, labels = inputs.to(device), labels.to(
             device
         )  # Move tensors to device, e.g. GPU
@@ -270,11 +270,10 @@ def train_loop(
             model, sum_sq_gradients, sum_sq_parameters
         )
 
-        # Get predicted class
-        # The line below is basically taking the outputs tensor, which has
-        # shape (batch_size, 2), and getting the index of the maximum value in
-        # each row (i.e. the predicted class) and returning a tensor of shape
-        # (batch_size, 1)
+        # Get predicted class The line below is basically taking the
+        # outputs tensor, which has shape (batch_size, 2), and getting
+        # the index of the maximum value in each row (i.e. the predicted
+        # class) and returning a tensor of shape (batch_size, 1)
         _, predicted = torch.max(outputs.data, 1)
         # Accumulate true and predicted labels for F1 score calculation
         true_labels.extend(labels.cpu().numpy())
@@ -321,14 +320,14 @@ def test_loop(model, device, test_loader, criterion):
         test_acc (float): The test accuracy.
         test_f1 (float): The test F1 score.
         test_pr_auc (float): The test precision-recall AUC score.
-        labels_and_probs (numpy.ndarray): A numpy array containing the true
-            labels, predicted labels, and predicted probabilities.
+        labels_and_probs (numpy.ndarray): A numpy array containing the
+            true labels, predicted labels, and predicted probabilities.
 
     TODO: Check/integrate changes from FD.
     """
-    # Set the model to evaluation mode - important for batch normalization and
-    # dropout layers
-    # This is best practice, but is it necessary here in this situation?
+    # Set the model to evaluation mode - important for batch
+    # normalization and dropout layers This is best practice, but is it
+    # necessary here in this situation?
     model.eval()
 
     # Initialize running loss
@@ -342,9 +341,10 @@ def test_loop(model, device, test_loader, criterion):
     # Initialize probabilities for precision-recall AUC calculation
     pred_probs = []
 
-    # Evaluating the model with torch.no_grad() ensures that no gradients are
-    # computed during test mode also serves to reduce unnecessary gradient
-    # computations and memory usage for tensors with requires_grad=True
+    # Evaluating the model with torch.no_grad() ensures that no
+    # gradients are computed during test mode also serves to reduce
+    # unnecessary gradient computations and memory usage for tensors
+    # with requires_grad=True
     with torch.no_grad():
         for i, (inputs, labels) in enumerate(test_loader):
             inputs, labels = inputs.to(device), labels.to(
@@ -364,10 +364,12 @@ def test_loop(model, device, test_loader, criterion):
             probabilities = F.softmax(outputs, dim=1)
             prob_of_class_1 = probabilities[:, 1]
 
-            # Accumulate true and predicted labels for F1 score calculation
+            # Accumulate true and predicted labels for F1 score
+            # calculation
             true_labels.extend(labels.cpu().numpy())
             pred_labels.extend(predicted.cpu().numpy())
-            # Accumulate probabilities for precision-recall AUC calculation
+            # Accumulate probabilities for precision-recall AUC
+            # calculation
             pred_probs.extend(prob_of_class_1.cpu().numpy())
 
     # Calculate average loss and accuracy over all batches

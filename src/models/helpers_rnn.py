@@ -1,27 +1,27 @@
 """
-This module contains helper functions for training a Recurrent Neural Network
-(RNN) on a dataset.
+This module contains helper functions for training a Recurrent Neural
+Network (RNN) on a dataset.
 
-It includes functions for saving the trained model and configuration settings,
-checking for NaN and inf values in the input tensor, computing the sum of
-squared gradients and parameters for a given model, checking for NaN and inf
-values in the gradients of a given model, and checking for NaN and inf values
-in the loss value.
+It includes functions for saving the trained model and configuration
+settings, checking for NaN and inf values in the input tensor, computing
+the sum of squared gradients and parameters for a given model, checking
+for NaN and inf values in the gradients of a given model, and checking
+for NaN and inf values in the loss value.
 
 Functions:
     save_model_and_config(
-        model, model_name, timestamp, pickle_path, processed_data_path, config
-        , model_dir, config_dir) -> None: Saves the trained model and
-            configuration settings.
-    debug_input_nan_inf(inputs) -> None: Checks for NaN and inf values in the
-        input tensor.
+        model, model_name, timestamp, pickle_path, processed_data_path,
+        config, model_dir, config_dir
+    ) -> None: Saves the trained model and configuration settings.
+    debug_input_nan_inf(inputs) -> None: Checks for NaN and inf values
+        in the input tensor.
     debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters)
-        -> float, float: Computes the sum of squared gradients and parameters
-            for a given model.
-    debug_grad_nan_inf(model, epoch, i) -> None: Checks for NaN and inf values
-        in the gradients of a given model.
-    debug_loss_nan_inf(epoch, i, loss) -> None: Checks for NaN and inf values
-        in the loss value.
+    -> float, float: Computes the sum of squared gradients and
+        parameters for a given model.
+    debug_grad_nan_inf(model, epoch, i) -> None: Checks for NaN and inf
+        values in the gradients of a given model.
+    debug_loss_nan_inf(epoch, i, loss) -> None: Checks for NaN and inf
+        values in the loss value.
 """
 
 import hashlib
@@ -52,9 +52,11 @@ def save_model_and_config(
         model_name (str): The name of the model.
         timestamp (str): The timestamp to use in the output file names.
         pickle_path (str): The path to the input data pickle file.
-        processed_data_path (str): The path to the processed data pickle file.
+        processed_data_path (str): The path to the processed data pickle
+            file.
         config (dict): The configuration settings for the model.
-        model_dir (pathlib.Path): The directory to save the trained model.
+        model_dir (pathlib.Path): The directory to save the trained
+            model.
         config_dir (pathlib.Path): The directory to save the
             configuration settings.
     """
@@ -93,7 +95,8 @@ def debug_input_nan_inf(inputs):
         inputs (torch.Tensor): The input tensor.
 
     Raises:
-        AssertionError: If any NaN or inf values are found in the input tensor.
+        AssertionError: If any NaN or inf values are found in the input
+            tensor.
     """
     nan_positions = torch.nonzero(torch.isnan(inputs), as_tuple=True)
     assert not torch.isnan(
@@ -107,17 +110,20 @@ def debug_input_nan_inf(inputs):
 
 def debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters):
     """
-    Computes the sum of squared gradients and parameters for a given model.
+    Computes the sum of squared gradients and parameters for a given
+    model.
 
     Args:
         model (torch.nn.Module): The model to compute the sum of squared
             gradients and parameters for.
         sum_sq_gradients (float): The current sum of squared gradients.
-        sum_sq_parameters (float): The current sum of squared parameters.
+        sum_sq_parameters (float): The current sum of squared
+            parameters.
 
     Returns:
         sum_sq_gradients (float): The updated sum of squared gradients.
-        sum_sq_parameters (float): The updated sum of squared parameters.
+        sum_sq_parameters (float): The updated sum of squared
+        parameters.
     """
     for name, param in model.named_parameters():
         if param.grad is not None:

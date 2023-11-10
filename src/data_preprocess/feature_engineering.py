@@ -1,14 +1,21 @@
 """
-This module contains the `FeatureEngineer` class for performing feature engineering on a Pandas DataFrame.
+This module contains the `FeatureEngineer` class for performing feature
+engineering on a Pandas DataFrame.
 
-The `FeatureEngineer` class includes methods for standardizing features and performing other feature engineering steps. It uses the `StandardScaler` class from the `sklearn.preprocessing` module to standardize features.
+The `FeatureEngineer` class includes methods for standardizing features
+and performing other feature engineering steps. It uses the
+`StandardScaler` class from the `sklearn.preprocessing` module to
+standardize features.
 
 Classes:
     FeatureEngineer:
-        A class for performing feature engineering on a Pandas DataFrame. It includes methods for standardizing features and performing other feature engineering steps.
+        A class for performing feature engineering on a Pandas
+        DataFrame. It includes methods for standardizing features and
+        performing other feature engineering steps.
 
 Example:
-    To use the FeatureEngineer class to standardize features of a DataFrame:
+    To use the FeatureEngineer class to standardize features of a
+    DataFrame:
 
     >>> df = pd.DataFrame(data)
     >>> feature_engineer = FeatureEngineer(df)
@@ -27,12 +34,16 @@ class FeatureEngineer:
     A class for performing feature engineering on a Pandas DataFrame.
 
     Attributes:
-        df (pandas.DataFrame): The DataFrame to perform feature engineering on.
-        scaler (sklearn.preprocessing.StandardScaler): The scaler object used to standardize the features.
+        df (pandas.DataFrame): The DataFrame to perform feature
+            engineering on.
+        scaler (sklearn.preprocessing.StandardScaler): The scaler object
+            used to standardize the features.
 
     Methods:
-        standardize_features(columns_to_scale): Standardizes the specified columns in the DataFrame.
-        engineer_features(): Performs feature engineering steps on the DataFrame.
+        standardize_features(columns_to_scale): Standardizes the
+            specified columns in the DataFrame.
+        engineer_features(): Performs feature engineering steps on the
+            DataFrame.
     """
 
     def __init__(self, df=None):
@@ -40,7 +51,8 @@ class FeatureEngineer:
         Initializes FeatureEngineer with the given DataFrame.
 
         Args:
-            df (pandas.DataFrame): The DataFrame to perform feature engineering on.
+            df (pandas.DataFrame): The DataFrame to perform feature
+                engineering on.
         """
         if df is None:
             raise ValueError("DataFrame cannot be None.")
@@ -62,7 +74,8 @@ class FeatureEngineer:
             )
         if not all(col in self.df.columns for col in columns_to_scale):
             raise ValueError(
-                "All elements of columns_to_scale must be columns in the DataFrame."
+                "All elements of columns_to_scale must be columns in the "
+                "DataFrame."
             )
         try:
             logger.info("Standardizing features...")
@@ -112,8 +125,7 @@ class FeatureEngineer:
                 "ant_W_delta",
             ]
         )
-        # Perform additional feature engineering steps here
-        # ...
+        # Perform additional feature engineering steps here ...
 
         # Logging the end of the feature engineering step
         logger.info(
