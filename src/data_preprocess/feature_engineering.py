@@ -9,7 +9,7 @@ Classes:
 
 Example:
     To use the FeatureEngineer class to standardize features of a DataFrame:
-    
+
     >>> df = pd.DataFrame(data)
     >>> feature_engineer = FeatureEngineer(df)
     >>> df_standardized = feature_engineer.engineer_features()
@@ -17,7 +17,6 @@ Example:
 
 import logging
 
-import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
@@ -59,10 +58,12 @@ class FeatureEngineer:
             raise TypeError("columns_to_scale must be a list.")
         if not all(isinstance(col, str) for col in columns_to_scale):
             raise TypeError(
-                "All elements of columns_to_scale must be strings.")
+                "All elements of columns_to_scale must be strings."
+            )
         if not all(col in self.df.columns for col in columns_to_scale):
             raise ValueError(
-                "All elements of columns_to_scale must be columns in the DataFrame.")
+                "All elements of columns_to_scale must be columns in the DataFrame."
+            )
         try:
             logger.info("Standardizing features...")
             # sklearn's StandardScaler().fit_transform works by first
@@ -72,10 +73,12 @@ class FeatureEngineer:
             # zero and the standard deviation to scale the data to unit
             # variance.
             self.df[columns_to_scale] = self.scaler.fit_transform(
-                self.df[columns_to_scale])
+                self.df[columns_to_scale]
+            )
         except Exception as e:
             logger.error(
-                f"An error occurred while standardizing features: {e}")
+                f"An error occurred while standardizing features: {e}"
+            )
             raise e
 
     def engineer_features(self):
@@ -114,5 +117,6 @@ class FeatureEngineer:
 
         # Logging the end of the feature engineering step
         logger.info(
-            "Finished engineering features (in FeatureEngineer class).\n\n")
+            "Finished engineering features (in FeatureEngineer class).\n\n"
+        )
         return self.df

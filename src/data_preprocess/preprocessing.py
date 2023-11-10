@@ -55,7 +55,12 @@ class DataPreprocessor:
         preprocess_data(save_data): Performs preprocessing steps on the DataFrame.
     """
 
-    def __init__(self, pickle_path=None, raw_data_id: str = "ff-mw", save_data: bool = False):
+    def __init__(
+        self,
+        pickle_path=None,
+        raw_data_id: str = "ff-mw",
+        save_data: bool = False,
+    ):
         """
         Initializes a new instance of the DataPreprocessor class.
 
@@ -97,7 +102,8 @@ class DataPreprocessor:
                 return self.df_raw
             else:
                 raise ValueError(
-                    "\nVALUE ERROR: Provide a valid pickle path.\n")
+                    "\nVALUE ERROR: Provide a valid pickle path.\n"
+                )
         except Exception as e:
             logger.error(f"\nERROR loading data: {e}\n")
             raise
@@ -114,7 +120,8 @@ class DataPreprocessor:
         """
         # Logging statement to indicate the start of saving processed data
         logger.debug(
-            "\nSaving processed data in DataPreprocessor -> save_processed_data() ...")
+            "\nSaving processed data in DataPreprocessor -> save_processed_data() ..."
+        )
         try:
             # Create the directory for the processed data if it doesn't exist
             processed_data_dir = Path(f"data/processed/{self.raw_data_id}")
@@ -131,15 +138,19 @@ class DataPreprocessor:
             logger.debug("Processed data hashed.")
 
             # Construct the output file path
-            self.processed_data_path = processed_data_dir / \
-                f"{self.timestamp}_processed_data_{processed_data_hash}.pkl"
+            self.processed_data_path = (
+                processed_data_dir
+                / f"{self.timestamp}_processed_data_{processed_data_hash}.pkl"
+            )
 
             # Save the processed data to the output file
             logger.debug(
-                f"Saving processed data to {self.processed_data_path}...")
+                f"Saving processed data to {self.processed_data_path}..."
+            )
             self.df.to_pickle(self.processed_data_path)
             logger.debug(
-                f"Processed data saved to {self.processed_data_path}.\n")
+                f"Processed data saved to {self.processed_data_path}.\n"
+            )
             return str(self.processed_data_path)
         except Exception as e:
             logger.error(f"\nERROR saving processed data: {e}\n")
@@ -157,12 +168,12 @@ class DataPreprocessor:
         """
         # Logging statement to indicate the start of dropping columns
         logger.debug(
-            f"\nDropping columns {columns_to_drop} in DataPreprocessor -> drop_columns() ...")
+            f"\nDropping columns {columns_to_drop} in DataPreprocessor -> drop_columns() ..."
+        )
         try:
             self.df.drop(columns_to_drop, axis=1, inplace=True)
             # Logging statement to indicate the end of dropping columns
-            logger.debug(
-                f"Columns dropped successfully.\n")
+            logger.debug("Columns dropped successfully.\n")
         except Exception as e:
             logger.error(f"\nERROR dropping columns: {e}\n")
             raise
@@ -180,17 +191,19 @@ class DataPreprocessor:
         """
         # Logging statement to indicate the start of moving a column
         logger.debug(
-            f"\nRearranging specific columns in DataPreprocessor -> specific_rearrange() ...")
+            "\nRearranging specific columns in DataPreprocessor -> specific_rearrange() ..."
+        )
         try:
             logger.debug(
-                f"Moving column {col_to_move} to be immediately after {ref_col}...")
+                f"Moving column {col_to_move} to be immediately after {ref_col}..."
+            )
             cols = self.df.columns.tolist()
-            cols.insert(cols.index(ref_col) + 1,
-                        cols.pop(cols.index(col_to_move)))
+            cols.insert(
+                cols.index(ref_col) + 1, cols.pop(cols.index(col_to_move))
+            )
             self.df = self.df[cols]
             # Logging statement to indicate the end of moving a column
-            logger.debug(
-                f"Column moved successfully.\n")
+            logger.debug("Column moved successfully.\n")
         except Exception as e:
             logger.error(f"\nERROR moving column: {e}\n")
             raise
@@ -207,13 +220,14 @@ class DataPreprocessor:
         """
         # Logging statement to indicate the start of rearranging columns
         logger.debug(
-            f"\nRearranging columns in DataPreprocessor -> rearrange_columns() ...")
+            "\nRearranging columns in DataPreprocessor -> rearrange_columns()"
+            "..."
+        )
         try:
             logger.debug(f"Rearranging columns to {cols_order}...")
             self.df = self.df[cols_order]
             # Logging statement to indicate the end of rearranging columns
-            logger.debug(
-                f"Columns rearranged successfully.\n")
+            logger.debug("Columns rearranged successfully.\n")
         except Exception as e:
             logger.error(f"\nERROR rearranging columns: {e}\n")
             raise
@@ -231,16 +245,17 @@ class DataPreprocessor:
         """
         # Logging statement to indicate the start of calculating means
         logger.debug(
-            f"\nCalculating means in DataPreprocessor -> calculate_means() ...")
+            "\nCalculating means in DataPreprocessor -> calculate_means() ..."
+        )
         try:
             for pair, new_col in zip(column_pairs, new_columns):
                 logger.debug(
-                    f"Calculating mean of columns {pair} and adding as {new_col}...")
+                    f"Calculating mean of columns {pair} and adding as {new_col}..."
+                )
                 self.df[new_col] = self.df[pair].mean(axis=1)
 
             # Logging statement to indicate the end of calculating means
-            logger.debug(
-                f"Means calculated successfully.\n")
+            logger.debug("Means calculated successfully.\n")
         except Exception as e:
             logger.error(f"\nERROR calculating means: {e}\n")
             raise
@@ -258,16 +273,20 @@ class DataPreprocessor:
         """
         # Logging statement to indicate the start of adding labels
         logger.debug(
-            f"\nAdding labels in DataPreprocessor -> add_labels() ...")
+            "\nAdding labels in DataPreprocessor -> add_labels() ..."
+        )
         try:
             logger.debug(
-                f"Adding new column {new_column} based on conditions of columns {condition_columns}...")
-            self.df[new_column] = ((self.df[condition_columns[0]] == 1) & (
-                self.df[condition_columns[1]].shift(1) == 0)).astype(int)
+                f"Adding new column {new_column} based on conditions of "
+                "columns {condition_columns}..."
+            )
+            self.df[new_column] = (
+                (self.df[condition_columns[0]] == 1)
+                & (self.df[condition_columns[1]].shift(1) == 0)
+            ).astype(int)
 
             # Logging statement to indicate the end of adding labels
-            logger.debug(
-                f"Labels added successfully.\n")
+            logger.debug("Labels added successfully.\n")
         except Exception as e:
             logger.error(f"\nERROR adding labels: {e}\n")
             raise
@@ -332,9 +351,7 @@ class DataPreprocessor:
         self.handle_infinity_and_na()
 
         # Rearrange the column names
-        self.specific_rearrange(
-            "F2Wdis_rate", "F2Wdis"
-        )
+        self.specific_rearrange("F2Wdis_rate", "F2Wdis")
         self.rearrange_columns(
             [
                 "Frame",
@@ -364,15 +381,16 @@ class DataPreprocessor:
 
         # Save the processed data to a pickled file if self.save_data is True.
         if self.save_data:
-            logger.info(
-                "!! save_data is True !!")
+            logger.info("!! save_data is True !!")
             self.save_processed_data()
 
         # Print the shape of the dataframe and its columns using the print module.
         print(
-            f"\nDataPreprocessor.preprocess_data --> Shape of the dataframe: {self.df.shape}")
+            f"\nDataPreprocessor.preprocess_data --> Shape of the dataframe: {self.df.shape}"
+        )
         print(
-            f"DataPreprocessor.preprocess_data --> Columns of the dataframe: {self.df.columns}\n")
+            f"DataPreprocessor.preprocess_data --> Columns of the dataframe: {self.df.columns}\n"
+        )
 
         # Add logging statements to indicate the end of preprocessing as part of the DataPreprocessor class
         logger.info("Preprocessing complete (in DataPreprocessor class).\n\n")
