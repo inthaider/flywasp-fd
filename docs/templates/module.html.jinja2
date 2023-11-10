@@ -10,6 +10,7 @@
     {% if module.modulename == 'src' %}
         <main class="pdoc">
             {% block modules_body %}
+                {{ super() }}  {# Include content from parent template's modules_body block #}
                 <section>
                     <h2>Submodules</h2>
                     <ul>
