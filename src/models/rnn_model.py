@@ -1,7 +1,12 @@
 """
-This module contains the implementation of a Recurrent Neural Network (RNN) model for time series prediction.
+This module contains the implementation of a Recurrent Neural Network (RNN)
+ model for time series prediction.
 
-It includes the `RNN` class for the model, the `WalkDataset` class for the dataset, and several helper functions for initializing the weights of the model parameters, loading the training and testing data into PyTorch DataLoader objects, initializing the weights for the CrossEntropyLoss function, and configuring the model for training.
+It includes the `RNN` class for the model, the `WalkDataset` class for the
+dataset, and several helper functions for initializing the weights of the
+model parameters, loading the training and testing data into PyTorch
+DataLoader objects, initializing the weights for the CrossEntropyLoss
+function, and configuring the model for training.
 
 Classes:
     RNN:
@@ -18,14 +23,14 @@ Functions:
         Initializes the weights for the CrossEntropyLoss function.
     loss_function(Y_train):
         Returns the CrossEntropyLoss function with weights.
-    configure_model(Y_train, input_size, hidden_size, output_size, learning_rate, device, batch_first=True):
+    configure_model(Y_train, input_size, hidden_size, output_size,
+                learning_rate, device, batch_first=True):
         Configures an RNN model for training.
 """
 
 import logging
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -49,8 +54,8 @@ class RNN(nn.Module):
     output_size : int
         The number of output features.
     batch_first : bool, optional
-        If True, then the input and output tensors are provided as (batch, seq, feature).
-        Default is True.
+        If True, then the input and output tensors are provided as
+        (batch, seq, feature). Default is True.
     """
 
     def __init__(self, input_size, hidden_size, output_size, batch_first=True):
@@ -66,8 +71,8 @@ class RNN(nn.Module):
         output_size : int
             The number of output features.
         batch_first : bool, optional
-            If True, then the input and output tensors are provided as (batch, seq, feature).
-            Default is True.
+            If True, then the input and output tensors are provided as
+            (batch, seq, feature). Default is True.
         """
         # Get the current timestamp as a string in the format YYYYMMDD
         self.timestamp = datetime.now().strftime("%Y%m%d")
@@ -78,10 +83,12 @@ class RNN(nn.Module):
         # Set the hidden_size attribute of the RNN object
         self.hidden_size = hidden_size
 
-        # Create an RNN layer with the specified input_size, hidden_size, and batch_first parameters
+        # Create an RNN layer with the specified input_size, hidden_size, and
+        #  batch_first parameters
         self.rnn = nn.RNN(input_size, hidden_size, batch_first=batch_first)
 
-        # Create a linear layer with the specified hidden_size and output_size parameters
+        # Create a linear layer with the specified hidden_size and output_size
+        #  parameters
         self.fc = nn.Linear(hidden_size, output_size)
 
         # Create a sigmoid activation function
@@ -107,7 +114,8 @@ class RNN(nn.Module):
             is moved to the same device as the input data.
         """
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(
-            x.device)  # initial hidden state
+            x.device
+        )  # initial hidden state
         # out: tensor of shape (batch_size, seq_length, hidden_size)
         out, _ = self.rnn(x, h0)
         # decode the hidden state of the last time step
@@ -166,12 +174,12 @@ class WalkDataset(Dataset):
 
         Returns
         -------
-        self.X[idx] : torch.Tensor
-            The input data at the given index.
-        self.Y[idx] : torch.Tensor
-            The target data at the given index.
+        tuple
+            A tuple containing the input data at the given index and the
+            target data at the given index.
         """
-        # Return a tuple containing the input and target data at the given index
+        # Return a tuple containing the input and target data at the given
+        #  index
         return self.X[idx], self.Y[idx]
 
 
@@ -187,9 +195,9 @@ def init_param_weights(m):
     m : torch.nn.Module
         The module to initialize. Only applies to Linear layers.
     """
-    # If the module is a linear layer, initialize the weights with Xavier uniform initialization
-    # and the biases with a constant value of 0.01
-    if type(m) == nn.Linear:
+    # If the module is a linear layer, initialize the weights with Xavier
+    #  uniform initialization and the biases with a constant value of 0.01
+    if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
 
@@ -220,28 +228,26 @@ def data_loaders(X_train, Y_train, X_test, Y_test, batch_size):
     """
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
-    train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, test_loader
 
 
 def _init_cross_entropy_weights(Y_train):
-    """
-    """
-    class_counts = [pd.Series(Y_train).value_counts()[
-        0], pd.Series(Y_train).value_counts()[1]]
+    """ """
+    class_counts = [
+        pd.Series(Y_train).value_counts()[0],
+        pd.Series(Y_train).value_counts()[1],
+    ]
 
     # Compute class weights
-    weights = 1. / torch.tensor(class_counts, dtype=torch.float)
+    weights = 1.0 / torch.tensor(class_counts, dtype=torch.float)
     weights = weights / weights.sum()
     return weights
 
 
 def loss_function(Y_train):
-    """
-    """
+    """ """
     # Calculating weights for class imbalance to pass to the loss function
     cross_entropy_weights = _init_cross_entropy_weights(Y_train)
 
@@ -251,7 +257,15 @@ def loss_function(Y_train):
     return criterion, cross_entropy_weights
 
 
-def configure_model(Y_train, input_size, hidden_size, output_size, learning_rate, device, batch_first=True):
+def configure_model(
+    Y_train,
+    input_size,
+    hidden_size,
+    output_size,
+    learning_rate,
+    device,
+    batch_first=True,
+):
     """
     Configures an RNN model for training.
 
@@ -268,7 +282,8 @@ def configure_model(Y_train, input_size, hidden_size, output_size, learning_rate
     device : str
         The device to use for training.
     batch_first : bool, optional
-        If True, then the input and output tensors are provided as (batch, seq, feature).
+        If True, then the input and output tensors are provided as (batch, seq
+        , feature).
         Default is True.
 
     Returns
@@ -285,8 +300,12 @@ def configure_model(Y_train, input_size, hidden_size, output_size, learning_rate
         The weights for the CrossEntropyLoss function.
     """
     # Create the RNN model
-    model = RNN(input_size=input_size, hidden_size=hidden_size,
-                output_size=output_size, batch_first=batch_first).to(device)
+    model = RNN(
+        input_size=input_size,
+        hidden_size=hidden_size,
+        output_size=output_size,
+        batch_first=batch_first,
+    ).to(device)
 
     # Apply the weight initialization
     model.apply(init_param_weights)
