@@ -9,6 +9,9 @@ data/raw/*
 
 notebooks/data/*
 
+src_misc/
+src_misc/*
+
 **/__pycache__/
 __pycache__/
 */__pycache__/
