@@ -142,7 +142,7 @@ class DataLoader:
                     raise FileNotFoundError(f"No file found at {file_path}\n")
 
                 with open(file_path, "rb") as file:
-                    train_test_dict[fn] = pickle.load(file)
+                    train_test_dict[fn] = pickle.load(file)  # Load
 
             self.data["train_test"] = train_test_dict.copy()  # Copy
             logger.info(
