@@ -89,71 +89,13 @@ class DataPreprocessor:
             f"\nDropping columns {columns_to_drop} in DataPreprocessor -> "
             "drop_columns() ..."
         )
-        
+
         try:
             self.df.drop(columns_to_drop, axis=1, inplace=True)
             # Logging statement to indicate the end of dropping columns
             logger.debug("Columns dropped successfully.\n")
         except Exception as e:
             logger.error(f"\nERROR dropping columns: {e}\n")
-            raise
-
-    def specific_rearrange(self, col_to_move, ref_col):
-        """
-        Moves a column to be immediately after a reference column.
-
-        Args:
-            col_to_move (str): The name of the column to move.
-            ref_col (str): The name of the reference column.
-
-        Raises:
-            Exception: If an error occurs while moving a column.
-        """
-        # Logging statement to indicate the start of moving a column
-        logger.debug(
-            "\nRearranging specific columns in DataPreprocessor -> "
-            "specific_rearrange() ..."
-        )
-        try:
-            logger.debug(
-                f"Moving column {col_to_move} to be immediately after "
-                f"{ref_col}..."
-            )
-            cols = self.df.columns.tolist()
-            cols.insert(
-                cols.index(ref_col) + 1, cols.pop(cols.index(col_to_move))
-            )
-            self.df = self.df[cols]
-            # Logging statement to indicate the end of moving a column
-            logger.debug("Column moved successfully.\n")
-        except Exception as e:
-            logger.error(f"\nERROR moving column: {e}\n")
-            raise
-
-    def rearrange_columns(self, cols_order):
-        """
-        Rearranges the columns of the DataFrame according to the
-        specified order.
-
-        Args:
-            cols_order (list of str): The order of the columns.
-
-        Raises:
-            Exception: If an error occurs while rearranging columns.
-        """
-        # Logging statement to indicate the start of rearranging columns
-        logger.debug(
-            "\nRearranging columns in DataPreprocessor -> rearrange_columns()"
-            "..."
-        )
-        try:
-            logger.debug(f"Rearranging columns to {cols_order}...")
-            self.df = self.df[cols_order]
-            # Logging statement to indicate the end of rearranging
-            # columns
-            logger.debug("Columns rearranged successfully.\n")
-        except Exception as e:
-            logger.error(f"\nERROR rearranging columns: {e}\n")
             raise
 
     def calculate_means(self, column_pairs, new_columns):
@@ -249,6 +191,64 @@ class DataPreprocessor:
 
         except Exception as e:
             logger.error(f"\nERROR handling infinite and NaN values: {e}\n")
+            raise
+
+    def specific_rearrange(self, col_to_move, ref_col):
+        """
+        Moves a column to be immediately after a reference column.
+
+        Args:
+            col_to_move (str): The name of the column to move.
+            ref_col (str): The name of the reference column.
+
+        Raises:
+            Exception: If an error occurs while moving a column.
+        """
+        # Logging statement to indicate the start of moving a column
+        logger.debug(
+            "\nRearranging specific columns in DataPreprocessor -> "
+            "specific_rearrange() ..."
+        )
+        try:
+            logger.debug(
+                f"Moving column {col_to_move} to be immediately after "
+                f"{ref_col}..."
+            )
+            cols = self.df.columns.tolist()
+            cols.insert(
+                cols.index(ref_col) + 1, cols.pop(cols.index(col_to_move))
+            )
+            self.df = self.df[cols]
+            # Logging statement to indicate the end of moving a column
+            logger.debug("Column moved successfully.\n")
+        except Exception as e:
+            logger.error(f"\nERROR moving column: {e}\n")
+            raise
+
+    def rearrange_columns(self, cols_order):
+        """
+        Rearranges the columns of the DataFrame according to the
+        specified order.
+
+        Args:
+            cols_order (list of str): The order of the columns.
+
+        Raises:
+            Exception: If an error occurs while rearranging columns.
+        """
+        # Logging statement to indicate the start of rearranging columns
+        logger.debug(
+            "\nRearranging columns in DataPreprocessor -> rearrange_columns()"
+            "..."
+        )
+        try:
+            logger.debug(f"Rearranging columns to {cols_order}...")
+            self.df = self.df[cols_order]
+            # Logging statement to indicate the end of rearranging
+            # columns
+            logger.debug("Columns rearranged successfully.\n")
+        except Exception as e:
+            logger.error(f"\nERROR rearranging columns: {e}\n")
             raise
 
     def preprocess_data(self):
