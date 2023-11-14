@@ -11,7 +11,11 @@ logger = logging.getLogger(__name__)
 
 class DataLoader:
     """
-    Class for loading raw/processed/train-test data from files.
+    Class for loading copies of raw/processed/train-test data from file.
+
+    In all the methods, the loaded data is copied to the data dict to
+    avoid modifying the original data. Therefore, one can access the
+    original loaded data from the data dict for the DataLoader object.
 
     Attributes:
         data (Dict[str, Any]): A dictionary containing the data.
@@ -46,14 +50,14 @@ class DataLoader:
         data_key: str,
     ) -> pd.DataFrame:
         """
-        Loads the DataFrame from a pickled file.
+        Loads & returns a copy of the DataFrame from a pickled file.
 
         Args:
             pickle_path (str | Path): The path to the pickled file.
             data_key (str): Key for the data in the data dict.
 
         Returns:
-            pd.DataFrame: The loaded DataFrame.
+            pd.DataFrame: A copy of the loaded DataFrame.
 
         Raises:
             FileNotFoundError: If the pickle file does not exist.
@@ -81,25 +85,27 @@ class DataLoader:
 
     def load_raw_data(self, pickle_path: str | Path) -> pd.DataFrame:
         """
-        Loads the raw DataFrame using internal _load_data() method.
+        Loads & returns a *copy* of the raw DataFrame. Uses internal
+        _load_data() method.
 
         Args:
             pickle_path (str | Path): The path to the pickled file.
 
         Returns:
-            pd.DataFrame: The raw DataFrame.
+            pd.DataFrame: A copy of the raw DataFrame.
         """
         return self._load_data(pickle_path, "raw")
 
     def load_processed_data(self, pickle_path: str | Path) -> pd.DataFrame:
         """
-        Loads the processed DataFrame using internal _load_data() method.
+        Loads & returns a *copy* of the processed DataFrame. Uses
+        internal _load_data() method.
 
         Args:
             pickle_path (str | Path): The path to the pickled file.
 
         Returns:
-            pd.DataFrame: The processed DataFrame.
+            pd.DataFrame: A copy of the processed DataFrame.
         """
         return self._load_data(pickle_path, "processed")
 
@@ -107,15 +113,16 @@ class DataLoader:
         self, data_dir: str | Path
     ) -> Dict[str, np.ndarray]:
         """
-        Loads 4 train/test datasets for the RNN from .pkl files.
+        Loads & returns *copies* of x4 train/test data splits for the
+        RNN from .pkl files.
 
         Args:
             data_dir (str | Path): The path to the directory containing
                 the 4 .pkl files.
 
         Returns:
-            Dict[str, np.ndarray]: A dictionary containing the 4
-                train/test datasets.
+            Dict[str, np.ndarray]: A dictionary containing copies of the
+                4 train/test datasets.
 
         Raises:
             FileNotFoundError: If the directory/any file doesn't exist.
@@ -128,21 +135,21 @@ class DataLoader:
             raise FileNotFoundError(f"No directory found at {dir_path}")
         self.data["paths"]["train_test"] = dir_path
 
-        file_names = [
-            "X_train.pkl",
-            "Y_train.pkl",
-            "X_test.pkl",
-            "Y_test.pkl",
+        splits = [
+            "X_train",
+            "Y_train",
+            "X_test",
+            "Y_test",
         ]
         train_test_dict = {}
         try:
-            for fn in file_names:
-                file_path = dir_path / fn
+            for s in splits:
+                file_path = dir_path / f"{s}.pkl"
                 if not file_path.exists():
                     raise FileNotFoundError(f"No file found at {file_path}\n")
 
                 with open(file_path, "rb") as file:
-                    train_test_dict[fn] = pickle.load(file)  # Load
+                    train_test_dict[s] = pickle.load(file)  # Load
 
             self.data["train_test"] = train_test_dict.copy()  # Copy
             logger.info(
