@@ -5,8 +5,7 @@ Pandas DataFrame.
 The `DataPreprocessor` class includes methods for loading data, saving
 processed data, dropping columns, rearranging columns, calculating
 means, adding labels, handling infinite and NaN values, and performing
-other preprocessing steps. It uses the `pandas` and `numpy` libraries
-for data manipulation and the `logging` library for logging.
+other preprocessing steps.
 
 Classes:
     DataPreprocessor:
@@ -38,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 class DataPreprocessor:
     """
-    A class for preprocessing a Pandas DataFrame.
+    Class for preprocessing Pandas DataFrame containing our raw data.
 
     Attributes:
         df_raw (pd.DataFrame): The raw DataFrame.
@@ -84,18 +83,12 @@ class DataPreprocessor:
         Raises:
             Exception: If an error occurs while dropping columns.
         """
-        # Logging statement to indicate the start of dropping columns
-        logger.debug(
-            f"\nDropping columns {columns_to_drop} in DataPreprocessor -> "
-            "drop_columns() ..."
-        )
-
+        logger.debug(f"Dropping columns {columns_to_drop}...\n")
         try:
             self.df.drop(columns_to_drop, axis=1, inplace=True)
-            # Logging statement to indicate the end of dropping columns
             logger.debug("Columns dropped successfully.\n")
         except Exception as e:
-            logger.error(f"\nERROR dropping columns: {e}\n")
+            logger.error(f"ERROR dropping columns: {e}\n")
             raise
 
     def calculate_means(self, column_pairs, new_columns):
@@ -111,10 +104,7 @@ class DataPreprocessor:
         Raises:
             Exception: If an error occurs while calculating means.
         """
-        # Logging statement to indicate the start of calculating means
-        logger.debug(
-            "\nCalculating means in DataPreprocessor -> calculate_means() ..."
-        )
+        logger.debug("Calculating means...")
         try:
             for pair, new_col in zip(column_pairs, new_columns):
                 logger.debug(
@@ -123,10 +113,9 @@ class DataPreprocessor:
                 )
                 self.df[new_col] = self.df[pair].mean(axis=1)
 
-            # Logging statement to indicate the end of calculating means
             logger.debug("Means calculated successfully.\n")
         except Exception as e:
-            logger.error(f"\nERROR calculating means: {e}\n")
+            logger.error(f"ERROR calculating means: {e}\n")
             raise
 
     def add_labels(self, condition_columns, new_column):
@@ -141,8 +130,7 @@ class DataPreprocessor:
         Raises:
             Exception: If an error occurs while adding labels.
         """
-        # Logging statement to indicate the start of adding labels
-        logger.debug("\nAdding labels in DataPreprocessor -> add_labels() ...")
+        logger.debug("Adding labels...")
         try:
             logger.debug(
                 f"Adding new column {new_column} based on conditions of "
@@ -153,10 +141,9 @@ class DataPreprocessor:
                 & (self.df[condition_columns[1]].shift(1) == 0)
             ).astype(int)
 
-            # Logging statement to indicate the end of adding labels
             logger.debug("Labels added successfully.\n")
         except Exception as e:
-            logger.error(f"\nERROR adding labels: {e}\n")
+            logger.error(f"ERROR adding labels: {e}\n")
             raise
 
     def handle_infinity_and_na(self):
@@ -190,7 +177,7 @@ class DataPreprocessor:
             # self.df.fillna(method='bfill', inplace=True)
 
         except Exception as e:
-            logger.error(f"\nERROR handling infinite and NaN values: {e}\n")
+            logger.error(f"ERROR handling infinite and NaN values: {e}\n")
             raise
 
     def specific_rearrange(self, col_to_move, ref_col):
@@ -204,10 +191,8 @@ class DataPreprocessor:
         Raises:
             Exception: If an error occurs while moving a column.
         """
-        # Logging statement to indicate the start of moving a column
         logger.debug(
-            "\nRearranging specific columns in DataPreprocessor -> "
-            "specific_rearrange() ..."
+            "Rearranging specific columns...\n"
         )
         try:
             logger.debug(
@@ -219,10 +204,9 @@ class DataPreprocessor:
                 cols.index(ref_col) + 1, cols.pop(cols.index(col_to_move))
             )
             self.df = self.df[cols]
-            # Logging statement to indicate the end of moving a column
             logger.debug("Column moved successfully.\n")
         except Exception as e:
-            logger.error(f"\nERROR moving column: {e}\n")
+            logger.error(f"ERROR moving column: {e}\n")
             raise
 
     def rearrange_columns(self, cols_order):
@@ -236,19 +220,13 @@ class DataPreprocessor:
         Raises:
             Exception: If an error occurs while rearranging columns.
         """
-        # Logging statement to indicate the start of rearranging columns
-        logger.debug(
-            "\nRearranging columns in DataPreprocessor -> rearrange_columns()"
-            "..."
-        )
+        logger.debug("Rearranging columns...\n")
         try:
             logger.debug(f"Rearranging columns to {cols_order}...")
             self.df = self.df[cols_order]
-            # Logging statement to indicate the end of rearranging
-            # columns
             logger.debug("Columns rearranged successfully.\n")
         except Exception as e:
-            logger.error(f"\nERROR rearranging columns: {e}\n")
+            logger.error(f"ERROR rearranging columns: {e}\n")
             raise
 
     def get_preprocessed_data(self):
@@ -258,9 +236,7 @@ class DataPreprocessor:
         Returns:
             pd.DataFrame: The processed DataFrame.
         """
-        # Add logging statements to indicate the start of preprocessing
-        # as part of the DataPreprocessor class
-        logger.info("\n\nPreprocessing data (in DataPreprocessor class)...")
+        logger.info("Preprocessing data...\n")
 
         # Drop the 'plot' column
         self.drop_columns(["plot"])
@@ -306,18 +282,9 @@ class DataPreprocessor:
             ]
         )
 
-        # Print the shape of the dataframe and its columns using the
-        # print module.
-        print(
-            f"\nDataPreprocessor.get_preprocessed_data --> Shape of the dataframe: "
-            f"{self.df.shape}"
-        )
-        print(
-            f"DataPreprocessor.get_preprocessed_data --> Columns of the dataframe: "
-            f"{self.df.columns}\n"
-        )
+        # Print the shape of the dataframe and its columns
+        print(f"Shape of the DataFrame: {self.df.shape}")
+        print(f"Columns of the dataframe: {self.df.columns}\n")
 
-        # Add logging statements to indicate the end of preprocessing as
-        # part of the DataPreprocessor class
-        logger.info("Preprocessing complete (in DataPreprocessor class).\n\n")
+        logger.info("Preprocessing complete.\n\n")
         return self.df
