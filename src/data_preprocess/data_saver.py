@@ -15,14 +15,57 @@ logger = logging.getLogger(__name__)
 
 
 class DataSaver:
+    """
+    Class for saving processed data/model & config to files.
+
+    Attributes:
+        saved_paths (Dict[str, Path]): A dictionary containing the
+            Pathlib paths to the saved files.
+            The keys are:
+                - "processed_data": The path to the processed data file.
+                - "train_test_data": The path to the train/test data
+                    directory.
+                - "model": The path to the model file.
+                - "config": The path to the configuration file.
+
+    Methods:
+        save_processed_data(
+            df: pd.DataFrame, dir: str | Path, data_id: str
+        ) -> Path:
+            Saves the processed data to a pickle file.
+        save_train_test_data(
+            X_train, Y_train, X_test, Y_test, dir: str
+        ) -> str:
+            Saves the train/test splits to pickle files.
+        save_model_and_config(
+            model, model_name, timestamp, model_dir, config, config_dir
+        ):
+            Saves the trained model and configuration settings.
+    """
+
     def __init__(self):
         # self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.saved_paths = {}
 
     def save_processed_data(
-        self, df: pd.DataFrame, dir: str | Path, data_id: str, timestamp: str
+        self, df: pd.DataFrame, dir: str | Path, data_id: str
     ) -> Path:
+        """
+        Saves the processed data to a pickle file.
+
+        Args:
+            df (pd.DataFrame): The processed DataFrame.
+            dir (str | Path): The directory to save the processed data.
+            data_id (str): The ID of the processed data.
+
+        Returns:
+            Path: The path to the saved file.
+
+        Raises:
+            Exception: If there is an error saving the processed data.
+        """
         dir = Path(dir)
+        timestamp = datetime.now().strftime("%Y%m%d")
         logger.info(f"Saving processed datasets to {dir}...\n")
         try:
             processed_data_dir = dir / f"processed/{data_id}"
@@ -66,8 +109,29 @@ class DataSaver:
             raise
 
     def save_train_test_data(
-        self, X_train, Y_train, X_test, Y_test, dir: str, timestamp: str
-    ) -> str:
+        self,
+        X_train: np.ndarray,
+        Y_train: np.ndarray,
+        X_test: np.ndarray,
+        Y_test: np.ndarray,
+    ) -> Path:
+        """
+        Saves the train/test splits to pickle files.
+
+        Args:
+            X_train (np.ndarray): The training data features.
+            Y_train (np.ndarray): The training data labels.
+            X_test (np.ndarray): The test data features.
+            Y_test (np.ndarray): The test data labels.
+            dir (str): The directory to save the train/test data.
+
+        Returns:
+            Path: The path to the saved directory.
+
+        Raises:
+            Exception: If there is an error saving the train/test data.
+        """
+        timestamp = datetime.now().strftime("%Y%m%d")
         logger.info(f"Saving train/test splits to {dir}...\n")
         try:
             train_test_data_dir = Path(dir) / f"{timestamp}"
@@ -96,14 +160,41 @@ class DataSaver:
             self.saved_paths["train_test_data"] = train_test_data_dir
             logger.info(f"Train/test data saved to {train_test_data_dir}.\n")
 
-            return str(train_test_data_dir)
+            return train_test_data_dir
         except Exception as e:
             logger.error(f"\nError saving train and test data: {e}\n")
             raise
 
     def save_model_and_config(
-        self, model, model_name, timestamp, model_dir, config, config_dir
-    ):
+        self,
+        model: torch.nn.Module,
+        model_name: str,
+        timestamp: str,
+        model_dir: str | Path,
+        config: Dict,
+        config_dir: str | Path,
+    ) -> Tuple[Path, Path]:
+        """
+        Saves the trained model and configuration settings.
+
+        Args:
+            model (torch.nn.Module): The trained RNN model.
+            model_name (str): The name of the model.
+            timestamp (str): The timestamp to use in the output file
+                names.
+            model_dir (str | Path): The directory to save the trained
+                model.
+            config (Dict): The configuration settings for the model.
+            config_dir (str | Path): The directory to save the
+                configuration settings.
+
+        Returns:
+            Tuple[Path, Path]: The paths to the saved model and
+                configuration settings.
+
+        Raises:
+            Exception: If there is an error saving the model/config.
+        """
         try:
             model_dir, config_dir = Path(model_dir), Path(config_dir)
             logger.info(
@@ -132,7 +223,7 @@ class DataSaver:
                     "Model and configuration already exist. Skipping saving."
                 )
                 return
-            
+
             model_dir.mkdir(parents=True, exist_ok=True)
             config_dir.mkdir(parents=True, exist_ok=True)
             model_path = Path(model_dir / model_file_name)
@@ -147,6 +238,8 @@ class DataSaver:
             logger.info(
                 f"Model & config saved to {model_dir} & {config_dir}.\n"
             )
+
+            return model_path, config_path
         except Exception as e:
             logger.error(f"\nError saving model & config: {e}\n")
             raise
