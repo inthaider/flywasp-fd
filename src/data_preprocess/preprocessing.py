@@ -18,9 +18,9 @@ Classes:
 
 Example:
     To preprocess a dataset using the DataPreprocessor class:
-TODO: Fix these examples:
-        >>> preprocessor = DataPreprocessor(pickle_path='path/to/data.pkl')
-        >>> df_processed = preprocessor.get_preprocessed_data(save_data=True)
+
+    >>> preprocessor = DataPreprocessor(df)
+    >>> df_processed = preprocessor.get_preprocessed_data()
 
 Note:
     This module expects the raw data to be in a Pandas DataFrame format
@@ -30,8 +30,8 @@ Note:
 import logging
 from datetime import datetime
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
