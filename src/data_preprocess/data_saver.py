@@ -4,7 +4,7 @@ import hashlib
 
 from datetime import datetime
 import pickle
-from typing import Dict
+from typing import Dict, Tuple
 import uuid
 import numpy as np
 import pandas as pd
@@ -114,6 +114,7 @@ class DataSaver:
         Y_train: np.ndarray,
         X_test: np.ndarray,
         Y_test: np.ndarray,
+        dir: str | Path,
     ) -> Path:
         """
         Saves the train/test splits to pickle files.
@@ -132,9 +133,10 @@ class DataSaver:
             Exception: If there is an error saving the train/test data.
         """
         timestamp = datetime.now().strftime("%Y%m%d")
+        dir = Path(dir)
         logger.info(f"Saving train/test splits to {dir}...\n")
         try:
-            train_test_data_dir = Path(dir) / f"{timestamp}"
+            train_test_data_dir = dir / f"{timestamp}"
             train_test_data_dir.mkdir(parents=True, exist_ok=True)
 
             for data, name in zip(
@@ -169,11 +171,10 @@ class DataSaver:
         self,
         model: torch.nn.Module,
         model_name: str,
-        timestamp: str,
         model_dir: str | Path,
         config: Dict,
         config_dir: str | Path,
-    ) -> Tuple[Path, Path]:
+    ) -> None | Tuple[Path, Path]:
         """
         Saves the trained model and configuration settings.
 
@@ -195,12 +196,12 @@ class DataSaver:
         Raises:
             Exception: If there is an error saving the model/config.
         """
+        timestamp = datetime.now().strftime("%Y%m%d")
+        model_dir, config_dir = Path(model_dir), Path(config_dir)
+        logger.info(
+            f"Saving model & config to {model_dir} & {config_dir}...\n"
+        )
         try:
-            model_dir, config_dir = Path(model_dir), Path(config_dir)
-            logger.info(
-                f"Saving model & config to {model_dir} & {config_dir}...\n"
-            )
-
             # Generate a hash based on DataFrame metadata and sampling
             logger.debug("Generating hash for model & config...")
             model_hash = hashlib.md5(
@@ -223,23 +224,23 @@ class DataSaver:
                     "Model and configuration already exist. Skipping saving."
                 )
                 return
+            else:
+                model_dir.mkdir(parents=True, exist_ok=True)
+                config_dir.mkdir(parents=True, exist_ok=True)
+                model_path = Path(model_dir / model_file_name)
+                config_path = Path(config_dir / config_file_name)
 
-            model_dir.mkdir(parents=True, exist_ok=True)
-            config_dir.mkdir(parents=True, exist_ok=True)
-            model_path = Path(model_dir / model_file_name)
-            config_path = Path(config_dir / config_file_name)
+                logger.debug("Saving now...")
+                torch.save(model.state_dict(), model_path)
+                with open(config_path, "w") as f:
+                    yaml.dump(config, f)
+                self.saved_paths["model"] = model_path
+                self.saved_paths["config"] = config_path
+                logger.info(
+                    f"Model & config saved to {model_dir} & {config_dir}.\n"
+                )
 
-            logger.debug("Saving now...")
-            torch.save(model.state_dict(), model_path)
-            with open(config_path, "w") as f:
-                yaml.dump(config, f)
-            self.saved_paths["model"] = model_path
-            self.saved_paths["config"] = config_path
-            logger.info(
-                f"Model & config saved to {model_dir} & {config_dir}.\n"
-            )
-
-            return model_path, config_path
+                return model_path, config_path
         except Exception as e:
             logger.error(f"\nError saving model & config: {e}\n")
             raise
