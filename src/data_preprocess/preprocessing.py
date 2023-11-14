@@ -20,7 +20,7 @@ Example:
     To preprocess a dataset using the DataPreprocessor class:
 TODO: Fix these examples:
         >>> preprocessor = DataPreprocessor(pickle_path='path/to/data.pkl')
-        >>> df_processed = preprocessor.preprocess_data(save_data=True)
+        >>> df_processed = preprocessor.get_preprocessed_data(save_data=True)
 
 Note:
     This module expects the raw data to be in a Pandas DataFrame format
@@ -49,17 +49,17 @@ class DataPreprocessor:
     Methods:
         drop_columns(columns_to_drop): Drops the specified columns from
             the DataFrame.
-        specific_rearrange(col_to_move, ref_col): Moves a column to be
-            immediately after a reference column.
-        rearrange_columns(cols_order): Rearranges the columns of the
-            DataFrame according to the specified order.
         calculate_means(column_pairs, new_columns): Calculates the means
             of pairs of columns and adds the results as new columns.
         add_labels(condition_columns, new_column): Adds a new column
             based on conditions of existing columns.
         handle_infinity_and_na(): Replaces infinite and NaN values in
             the DataFrame with forward/backward filled values.
-        preprocess_data(): High-level method to orchestrate
+        specific_rearrange(col_to_move, ref_col): Moves a column to be
+            immediately after a reference column.
+        rearrange_columns(cols_order): Rearranges the columns of the
+            DataFrame according to the specified order.
+        get_preprocessed_data(): High-level method to orchestrate
             preprocessing steps on the DataFrame.
     """
 
@@ -251,7 +251,7 @@ class DataPreprocessor:
             logger.error(f"\nERROR rearranging columns: {e}\n")
             raise
 
-    def preprocess_data(self):
+    def get_preprocessed_data(self):
         """
         Performs preprocessing steps on the DataFrame.
 
@@ -309,11 +309,11 @@ class DataPreprocessor:
         # Print the shape of the dataframe and its columns using the
         # print module.
         print(
-            f"\nDataPreprocessor.preprocess_data --> Shape of the dataframe: "
+            f"\nDataPreprocessor.get_preprocessed_data --> Shape of the dataframe: "
             f"{self.df.shape}"
         )
         print(
-            f"DataPreprocessor.preprocess_data --> Columns of the dataframe: "
+            f"DataPreprocessor.get_preprocessed_data --> Columns of the dataframe: "
             f"{self.df.columns}\n"
         )
 
