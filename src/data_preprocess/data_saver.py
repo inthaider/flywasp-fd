@@ -5,8 +5,11 @@ import hashlib
 from datetime import datetime
 import pickle
 from typing import Dict
+import uuid
 import numpy as np
 import pandas as pd
+import torch
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -17,184 +20,133 @@ class DataSaver:
         self.saved_paths = {}
 
     def save_processed_data(
-        self, df: pd.DataFrame, directory: str, data_id: str, timestamp: str
-    ) -> str:
-        processed_data_dir = Path(directory) / f"processed/{data_id}"
-        processed_data_dir.mkdir(parents=True, exist_ok=True)
+        self, df: pd.DataFrame, dir: str | Path, data_id: str, timestamp: str
+    ) -> Path:
+        dir = Path(dir)
+        logger.info(f"Saving processed datasets to {dir}...\n")
+        try:
+            processed_data_dir = dir / f"processed/{data_id}"
+            processed_data_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate a hash based on DataFrame metadata and some sampling
-        df_summary = f"{df.shape}{df.columns}{df.sample(n=10, random_state=1)}"
-        processed_data_hash = hashlib.md5(df_summary.encode()).hexdigest()
+            # Generate a hash based on DataFrame metadata and sampling
+            logger.debug("Generating hash for data...")
+            df_summary = (
+                f"{df.shape}{df.columns}{df.sample(n=10, random_state=1)}"
+            )
+            processed_data_hash = hashlib.md5(df_summary.encode()).hexdigest()
+            logger.debug("Data hashed.\n")
 
-        # Construct the output file path
-        processed_data_path = (
-            processed_data_dir
-            / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
-        )
+            # Construct the output file path
+            processed_data_path = (
+                processed_data_dir
+                / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
+            )
 
-        # Save the processed data to the output file
-        df.to_pickle(processed_data_path)
-        self.saved_paths["processed_data"] = processed_data_path
-        return str(processed_data_path)
+            # Check if file already exists
+            if processed_data_path.exists():
+                logger.warning(
+                    f"File {processed_data_path} already exists. Appending a"
+                    "unique identifier to the filename."
+                )
+                processed_data_path = (
+                    processed_data_dir
+                    / f"{timestamp}_processed_data_{processed_data_hash}_"
+                    f"{uuid.uuid4()}.pkl"
+                )
+
+            # Save the processed data to the output file
+            logger.debug("Saving now...")
+            df.to_pickle(processed_data_path)
+            self.saved_paths["processed_data"] = processed_data_path
+            logger.info(f"Processed data saved to {processed_data_path}.\n")
+
+            return processed_data_path
+        except Exception as e:
+            logger.error(f"\nError saving processed data: {e}\n")
+            raise
 
     def save_train_test_data(
-        self, X_train, Y_train, X_test, Y_test, directory: str, timestamp: str
+        self, X_train, Y_train, X_test, Y_test, dir: str, timestamp: str
     ) -> str:
-        train_test_data_dir = Path(directory) / f"{timestamp}"
-        train_test_data_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Saving train/test splits to {dir}...\n")
+        try:
+            train_test_data_dir = Path(dir) / f"{timestamp}"
+            train_test_data_dir.mkdir(parents=True, exist_ok=True)
 
-        for data, name in zip(
-            [X_train, Y_train, X_test, Y_test],
-            ["X_train", "Y_train", "X_test", "Y_test"],
-        ):
-            file_path = train_test_data_dir / f"{name}.pkl"
-            with open(file_path, "wb") as f:
-                pickle.dump(data, f)
+            for data, name in zip(
+                [X_train, Y_train, X_test, Y_test],
+                ["X_train", "Y_train", "X_test", "Y_test"],
+            ):
+                file_path = train_test_data_dir / f"{name}.pkl"
 
-        self.saved_paths["train_test_data"] = train_test_data_dir
-        return str(train_test_data_dir)
+                # Check if file already exists
+                if file_path.exists():
+                    logger.warning(
+                        f"File {file_path} already exists. Appending a unique"
+                        "identifier to the filename."
+                    )
+                    file_path = (
+                        train_test_data_dir / f"{name}_{uuid.uuid4()}.pkl"
+                    )
+
+                with open(file_path, "wb") as f:
+                    pickle.dump(data, f)
+
+            logger.debug("Saving now...")
+            self.saved_paths["train_test_data"] = train_test_data_dir
+            logger.info(f"Train/test data saved to {train_test_data_dir}.\n")
+
+            return str(train_test_data_dir)
+        except Exception as e:
+            logger.error(f"\nError saving train and test data: {e}\n")
+            raise
 
     def save_model_and_config(
         self, model, model_name, timestamp, model_dir, config, config_dir
     ):
-        model_hash = hashlib.md5(
-            str(model.state_dict()).encode("utf-8")
-        ).hexdigest()
-        config_hash = hashlib.md5(str(config).encode("utf-8")).hexdigest()
+        try:
+            model_dir, config_dir = Path(model_dir), Path(config_dir)
+            logger.info(
+                f"Saving model & config to {model_dir} & {config_dir}...\n"
+            )
 
-        model_path = (
-            model_dir / f"{timestamp}_model_{model_hash}_{model_name}.pt"
-        )
-        config_path = config_dir / f"{timestamp}_config_{config_hash}.yaml"
+            # Generate a hash based on DataFrame metadata and sampling
+            logger.debug("Generating hash for model & config...")
+            model_hash = hashlib.md5(
+                str(model.state_dict()).encode("utf-8")
+            ).hexdigest()
+            config_hash = hashlib.md5(str(config).encode("utf-8")).hexdigest()
+            logger.debug("Data hashed.\n")
 
-        torch.save(model.state_dict(), model_path)
-        with open(config_path, "w") as f:
-            yaml.dump(config, f)
+            model_file_name = f"{timestamp}_model_{model_hash}.pt"
+            config_file_name = f"{timestamp}_config_{config_hash}.yaml"
 
-        self.saved_paths["model"] = model_path
-        self.saved_paths["config"] = config_path
+            # Check if the model and configuration already exist
+            existing_models = [f.name for f in model_dir.glob("*.pt")]
+            existing_configs = [f.name for f in config_dir.glob("*.yaml")]
+            if (
+                model_file_name in existing_models
+                and config_file_name in existing_configs
+            ):
+                logger.info(
+                    "Model and configuration already exist. Skipping saving."
+                )
+                return
+            
+            model_dir.mkdir(parents=True, exist_ok=True)
+            config_dir.mkdir(parents=True, exist_ok=True)
+            model_path = Path(model_dir / model_file_name)
+            config_path = Path(config_dir / config_file_name)
 
-
-def save_processed_data(self) -> str:
-    # Logging statement to indicate the start of saving processed
-    # data
-    logger.debug(
-        "\nSaving processed data in DataPreprocessor -> "
-        "save_processed_data() ..."
-    )
-    try:
-        # Create the directory for the processed data if it doesn't
-        # exist
-        processed_data_dir = Path(f"data/processed/{self.raw_data_id}")
-        processed_data_dir.mkdir(parents=True, exist_ok=True)
-
-        #
-        # Generate a hash based on DataFrame metadata and some
-        # sampling
-        #
-        logger.debug("Generating hash for processed data...")
-        # Extracting the shape, columns and a sample of the
-        # dataframe
-        df_summary = (
-            f"{self.df.shape}"
-            f"{self.df.columns}"
-            f"{self.df.sample(n=10, random_state=1)}"
-        )
-        # Generating the hash using the md5 algorithm based on the
-        # dataframe summary
-        processed_data_hash = hashlib.md5(df_summary.encode()).hexdigest()
-        logger.debug("Processed data hashed.")
-
-        # Construct the output file path
-        self.processed_data_path = (
-            processed_data_dir
-            / f"{self.timestamp}_processed_data_{processed_data_hash}.pkl"
-        )
-
-        # Save the processed data to the output file
-        logger.debug(f"Saving processed data to {self.processed_data_path}...")
-        self.df.to_pickle(self.processed_data_path)
-        logger.debug(f"Processed data saved to {self.processed_data_path}.\n")
-        return str(self.processed_data_path)
-    except Exception as e:
-        logger.error(f"\nERROR saving processed data: {e}\n")
-        raise
-
-
-def _save_train_test_data(
-    self,
-    X_train: np.ndarray,
-    Y_train: np.ndarray,
-    X_test: np.ndarray,
-    Y_test: np.ndarray,
-) -> str:
-    # Logging messages to indicate the start of the function
-    logger.info("\nSaving train and test datasets...")
-    try:
-        # Create a timestamped directory for the processed data
-        self.train_test_data_dir = Path(
-            f"{self.train_test_data_par_dir}/{self.timestamp}"
-        )
-        self.train_test_data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Save the train and test datasets as .pkl files
-        X_train_file = self.train_test_data_dir / "X_train.pkl"
-        Y_train_file = self.train_test_data_dir / "Y_train.pkl"
-        X_test_file = self.train_test_data_dir / "X_test.pkl"
-        Y_test_file = self.train_test_data_dir / "Y_test.pkl"
-
-        with open(X_train_file, "wb") as f:
-            pickle.dump(X_train, f)
-        with open(Y_train_file, "wb") as f:
-            pickle.dump(Y_train, f)
-        with open(X_test_file, "wb") as f:
-            pickle.dump(X_test, f)
-        with open(Y_test_file, "wb") as f:
-            pickle.dump(Y_test, f)
-
-        # Logging messages to indicate the end of the function
-        logger.info(
-            "Successfully saved train and test datasets to "
-            f"{self.train_test_data_dir}.\n"
-        )
-        return str(self.train_test_data_dir)
-    except Exception as e:
-        logger.error(f"\nERROR saving train and test datasets: {e}\n")
-        raise
-
-
-def save_model_and_config(
-    model,
-    model_name,
-    timestamp,
-    pickle_path,
-    processed_data_path,
-    config,
-    model_dir,
-    config_dir,
-):
-    # Get the hash values of the model and configuration
-    model_hash = hashlib.md5(
-        str(model.state_dict()).encode("utf-8")
-    ).hexdigest()
-    config_hash = hashlib.md5(str(config).encode("utf-8")).hexdigest()
-
-    # Check if the model and configuration already exist
-    existing_models = [f.name for f in model_dir.glob("*.pt")]
-    existing_configs = [f.name for f in config_dir.glob("*.yaml")]
-    if (
-        f"rnn_model_{model_hash}.pt" in existing_models
-        and f"config_{config_hash}.yaml" in existing_configs
-    ):
-        logger.info("Model and configuration already exist. Skipping saving.")
-    else:
-        # Save the trained model
-        model_path = (
-            model_dir / f"{timestamp}_model_{model_hash}_{config_hash}.pt"
-        )
-        torch.save(model.state_dict(), model_path)
-
-        # Save the configuration settings
-        config_path = config_dir / f"{timestamp}_config_{config_hash}.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(config, f)
+            logger.debug("Saving now...")
+            torch.save(model.state_dict(), model_path)
+            with open(config_path, "w") as f:
+                yaml.dump(config, f)
+            self.saved_paths["model"] = model_path
+            self.saved_paths["config"] = config_path
+            logger.info(
+                f"Model & config saved to {model_dir} & {config_dir}.\n"
+            )
+        except Exception as e:
+            logger.error(f"\nError saving model & config: {e}\n")
+            raise
