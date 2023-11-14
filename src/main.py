@@ -8,6 +8,7 @@ from src.data_preprocess.rnn_data_prep import RNNDataPrep
 from src.models.train_eval import train_eval_model
 from src.visualization.rnn_visualize import plot_predicted_probabilities
 from src.utils.utilities import create_config_dict
+
 # from src.data_preprocess.feature_engineering import FeatureEngineer
 # from src.data_preprocess.preprocessing import DataPreprocessor from
 # src.models.helpers_rnn import save_model_and_config
@@ -97,7 +98,7 @@ def main():
 
     # Create the configuration dictionary
     config = create_config_dict(
-        model_name=f"{rnn_timestamp}_{model_name}",
+        model_name=model_name,
         input_size=input_size,
         hidden_size=hidden_size,
         output_size=output_size,
@@ -115,8 +116,8 @@ def main():
 
     # Save the trained model and configuration settings
     model_dir = Path(f"models/{model_name}")
-    model_dir.mkdir(parents=True, exist_ok=True)
     config_dir = Path(f"config/{model_name}")
+    model_dir.mkdir(parents=True, exist_ok=True)
     config_dir.mkdir(parents=True, exist_ok=True)
     model.save_model_and_config(
         model,
