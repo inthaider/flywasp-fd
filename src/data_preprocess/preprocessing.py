@@ -2,18 +2,12 @@
 This module contains the `DataPreprocessor` class for preprocessing a
 Pandas DataFrame.
 
-The `DataPreprocessor` class includes methods for loading data, saving
-processed data, dropping columns, rearranging columns, calculating
-means, adding labels, handling infinite and NaN values, and performing
-other preprocessing steps.
-
 Classes:
     DataPreprocessor:
         A class for preprocessing a Pandas DataFrame. It includes
-        methods for loading data, saving processed data, dropping
-        columns, rearranging columns, calculating means, adding labels,
-        handling infinite and NaN values, and performing other
-        preprocessing steps.
+        methods for dropping columns, rearranging columns, calculating
+        means, adding labels, handling infinite and NaN values, and
+        performing other preprocessing steps.
 
 Example:
     To preprocess a dataset using the DataPreprocessor class:
@@ -72,7 +66,7 @@ class DataPreprocessor:
         self.raw_data_id = raw_data_id
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-    def drop_columns(self, columns_to_drop):
+    def drop_columns(self, columns_to_drop: list[str]):
         """
         Drops the specified columns from the DataFrame.
 
@@ -91,7 +85,9 @@ class DataPreprocessor:
             logger.error(f"ERROR dropping columns: {e}\n")
             raise
 
-    def calculate_means(self, column_pairs, new_columns):
+    def calculate_means(
+        self, column_pairs: list[list[str]], new_columns: list[str]
+    ):
         """
         Calculates the means of pairs of columns and adds the results as
         new columns.
@@ -118,7 +114,7 @@ class DataPreprocessor:
             logger.error(f"ERROR calculating means: {e}\n")
             raise
 
-    def add_labels(self, condition_columns, new_column):
+    def add_labels(self, condition_columns: list[str], new_column: str):
         """
         Adds a new column based on conditions of existing columns.
 
@@ -180,7 +176,7 @@ class DataPreprocessor:
             logger.error(f"ERROR handling infinite and NaN values: {e}\n")
             raise
 
-    def specific_rearrange(self, col_to_move, ref_col):
+    def specific_rearrange(self, col_to_move: str, ref_col: str):
         """
         Moves a column to be immediately after a reference column.
 
@@ -191,9 +187,7 @@ class DataPreprocessor:
         Raises:
             Exception: If an error occurs while moving a column.
         """
-        logger.debug(
-            "Rearranging specific columns...\n"
-        )
+        logger.debug("Rearranging specific columns...\n")
         try:
             logger.debug(
                 f"Moving column {col_to_move} to be immediately after "
@@ -209,7 +203,7 @@ class DataPreprocessor:
             logger.error(f"ERROR moving column: {e}\n")
             raise
 
-    def rearrange_columns(self, cols_order):
+    def rearrange_columns(self, cols_order: list[str]):
         """
         Rearranges the columns of the DataFrame according to the
         specified order.
@@ -229,7 +223,7 @@ class DataPreprocessor:
             logger.error(f"ERROR rearranging columns: {e}\n")
             raise
 
-    def get_preprocessed_data(self):
+    def get_preprocessed_data(self) -> pd.DataFrame:
         """
         Performs preprocessing steps on the DataFrame.
 

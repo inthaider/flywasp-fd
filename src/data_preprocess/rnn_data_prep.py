@@ -1,17 +1,20 @@
 """
-This class contains the `RNNDataPrep` class that prepares input data for
+This module contains the `RNNDataPrep` class that prepares input data for
 the RNN model.
 
-The class takes as an input the preprocessed data (preprocessed using
-the `DataPreprocessor` class) and further processes it to generate
-train/test splits for the RNN model; OR
-
-The class and __init__ should be optimally designed to accommodate this
-use case. That is, the user should be able to give the class the
-processed pandas DataFrame and have it generate the train/test splits.
-
-The functionality/workflow/structure of the class and __init__ should be
-very clear and easy to understand based on best practices.
+Classes:
+    RNNDataPrep:
+        A class for preparing input data for the RNN model. It includes
+        methods for preparing train/test data splits, creating sequences,
+        and performing random oversampling.
+        
+Example:
+    To use the RNNDataPrep class to prepare train/test data for the RNN
+    model:
+    
+    >>> rnn_data_prep = RNNDataPrep()
+    >>> rnn_data_prep.set_data_source(df_processed)
+    >>> rnn_data_prep.prepare_rnn_data()
 
 TODO:
     Need to modify DataSaver so that it saves the test_indices along
@@ -35,6 +38,43 @@ logger = logging.getLogger(__name__)
 class RNNDataPrep:
     """
     Class for preparing input train/test data splits for the RNN model.
+
+    Attributes:
+        data_source (Optional[pd.DataFrame | (str | Path)]): The data
+            source for RNNDataPrep. Can be either a preprocessed
+            DataFrame or the path to the train/test data.
+        train_test_dict (Dict[str, np.ndarray]): A dictionary containing
+            the train/test splits.
+        test_indices (np.ndarray): The indices of the test sequences.
+
+    Methods:
+        set_data_source(
+            df_processed: Optional[pd.DataFrame] = None,
+            train_test_path: Optional[str | Path] = None,
+        ): Sets the data source for RNNDataPrep.
+        get_rnn_data(
+            sequence_length: int = 3,
+            split_ratio: float = 2 / 3,
+            rand_oversample: bool = False,
+        ): Returns the train/test data splits for the RNN model.
+        prepare_rnn_data(
+            sequence_length: int = 3,
+            split_ratio: float = 2 / 3,
+            rand_oversample: bool = False,
+        ): Prepares the train-test datasets for the RNN model.
+        _prep_train_test_seqs(
+            sequence_length: int, split_ratio: float
+        ): Prepares training and testing sequences for the RNN model.
+        _create_seqs(
+            data: np.ndarray,
+            sequence_length: int = 5,
+            index_start: int = 0,
+        ): Creates sequences of length `sequence_length` from the input
+            `data`.
+        _perform_random_oversampling(
+            X_train, Y_train
+        ): Performs random oversampling to balance the class
+            distribution.
     """
 
     def __init__(self):
