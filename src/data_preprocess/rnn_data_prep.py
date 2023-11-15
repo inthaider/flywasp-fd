@@ -7,11 +7,11 @@ Classes:
         A class for preparing input data for the RNN model. It includes
         methods for preparing train/test data splits, creating sequences,
         and performing random oversampling.
-        
+
 Example:
     To use the RNNDataPrep class to prepare train/test data for the RNN
     model:
-    
+
     >>> rnn_data_prep = RNNDataPrep()
     >>> rnn_data_prep.set_data_source(df_processed)
     >>> rnn_data_prep.prepare_rnn_data()
