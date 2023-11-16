@@ -2,22 +2,9 @@
 This module contains helper functions for training a Recurrent Neural
 Network (RNN) on a dataset.
 
-It includes functions for saving the trained model and configuration
-settings, checking for NaN and inf values in the input tensor, computing
-the sum of squared gradients and parameters for a given model, checking
-for NaN and inf values in the gradients of a given model, and checking
-for NaN and inf values in the loss value.
-
 Functions:
-    debug_input_nan_inf(inputs) -> None: Checks for NaN and inf values
-        in the input tensor.
-    debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters)
-    -> float, float: Computes the sum of squared gradients and
-        parameters for a given model.
-    debug_grad_nan_inf(model, epoch, i) -> None: Checks for NaN and inf
-        values in the gradients of a given model.
-    debug_loss_nan_inf(epoch, i, loss) -> None: Checks for NaN and inf
-        values in the loss value.
+
+TODO: Update docstrings
 """
 
 import time
@@ -64,8 +51,8 @@ def create_writer(
             LOGS_DIR,
             "tb_runs",
             HOST_NAME,
-            f"{get_current_time()}_{model_name}_{n_layers}_{hidden_units}_"
-            + f"{lr}_{device}",
+            f"{get_current_time()}_{model_name}_nhl{n_layers}_"
+            + f"nhu{hidden_units}_lr{lr}_{device}",
         )
 
     return SummaryWriter(get_tb_log_dir())
@@ -79,6 +66,9 @@ def timeSince(since):
     return "%dm %ds" % (m, s)
 
 
+# ******************************************************************** #
+#                            DEBUGGING STUFF                           #
+# ******************************************************************** #
 def debug_input_nan_inf(inputs):
     """
     Checks for NaN and inf values in the input tensor.
