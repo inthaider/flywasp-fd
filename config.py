@@ -1,4 +1,3 @@
-import os
 import socket
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 # -------------------------------------------------------------------- #
 def get_current_time():
-    return datetime.now().strftime("%b%d_%H-%M-%S")
+    return str(datetime.now().strftime("%b%d_%H-%M"))
 
 
 CURRENT_TIME = get_current_time()
@@ -29,19 +28,3 @@ CONFIGS_DIR = PROJECT_ROOT / "config"
 LOGS_DIR = PROJECT_ROOT / "logs"
 # -------------------------------------------------------------------- #
 FF_MW_DATA_FILE = INTERIM_DATA_DIR / "ff-mw.pkl"
-
-
-# ******************************************************************** #
-#                              LOGGING                                 #
-# ******************************************************************** #
-def get_tb_log_dir(device="cpu"):
-    """Returns the path to the tensorboard log directory."""
-    return os.path.join(
-        PROJECT_ROOT,
-        LOGS_DIR,
-        "tb_runs",
-        get_current_time() + "_" + HOST_NAME + str(device),
-    )
-
-
-TENSORBOARD_LOG_DIR = get_tb_log_dir()

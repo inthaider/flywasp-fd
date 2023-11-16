@@ -9,10 +9,6 @@ for NaN and inf values in the gradients of a given model, and checking
 for NaN and inf values in the loss value.
 
 Functions:
-    save_model_and_config(
-        model, model_name, timestamp, pickle_path, processed_data_path,
-        config, model_dir, config_dir
-    ) -> None: Saves the trained model and configuration settings.
     debug_input_nan_inf(inputs) -> None: Checks for NaN and inf values
         in the input tensor.
     debug_sumsq_grad_param(model, sum_sq_gradients, sum_sq_parameters)
@@ -24,67 +20,63 @@ Functions:
         values in the loss value.
 """
 
-import hashlib
+import time
 import logging
+import math
+import os
 
 import numpy as np
 import torch
-import yaml
+from torch.utils.tensorboard import SummaryWriter  # type: ignore
+
+from config import HOST_NAME, LOGS_DIR, PROJECT_ROOT, get_current_time
 
 logger = logging.getLogger(__name__)
 
 
-def save_model_and_config(
-    model,
-    model_name,
-    timestamp,
-    pickle_path,
-    processed_data_path,
-    config,
-    model_dir,
-    config_dir,
-):
+def create_writer(
+    n_layers: int,
+    hidden_units: int,
+    lr,
+    device: str | torch.device = "cpu",
+    experiment_num: int = 0,
+    model_name: str = "rnn",
+) -> SummaryWriter:
     """
-    Saves the trained model and configuration settings.
+    Create a SummaryWriter object for logging the training and test results.
 
     Args:
-        model (torch.nn.Module): The trained RNN model.
+        n_layers (int): The number of RNN layers in the model.
+        hidden_units (int): The number of hidden units in the model.
+        lr (float): The learning rate.
+        device (str | torch.device): The device used for training.
+        experiment_num (int): The name of the experiment.
         model_name (str): The name of the model.
-        timestamp (str): The timestamp to use in the output file names.
-        pickle_path (str): The path to the input data pickle file.
-        processed_data_path (str): The path to the processed data pickle
-            file.
-        config (dict): The configuration settings for the model.
-        model_dir (pathlib.Path): The directory to save the trained
-            model.
-        config_dir (pathlib.Path): The directory to save the
-            configuration settings.
+
+    Returns:
+        SummaryWriter: The SummaryWriter object.
     """
-    # Get the hash values of the model and configuration
-    model_hash = hashlib.md5(
-        str(model.state_dict()).encode("utf-8")
-    ).hexdigest()
-    config_hash = hashlib.md5(str(config).encode("utf-8")).hexdigest()
 
-    # Check if the model and configuration already exist
-    existing_models = [f.name for f in model_dir.glob("*.pt")]
-    existing_configs = [f.name for f in config_dir.glob("*.yaml")]
-    if (
-        f"rnn_model_{model_hash}.pt" in existing_models
-        and f"config_{config_hash}.yaml" in existing_configs
-    ):
-        logger.info("Model and configuration already exist. Skipping saving.")
-    else:
-        # Save the trained model
-        model_path = (
-            model_dir / f"{timestamp}_model_{model_hash}_{config_hash}.pt"
+    def get_tb_log_dir():
+        """Returns the path to the tensorboard log directory."""
+        return os.path.join(
+            PROJECT_ROOT,
+            LOGS_DIR,
+            "tb_runs",
+            HOST_NAME,
+            f"{get_current_time()}_{model_name}_{n_layers}_{hidden_units}_"
+            + f"{lr}_{device}",
         )
-        torch.save(model.state_dict(), model_path)
 
-        # Save the configuration settings
-        config_path = config_dir / f"{timestamp}_config_{config_hash}.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(config, f)
+    return SummaryWriter(get_tb_log_dir())
+
+
+def timeSince(since):
+    now = time.time()
+    s = now - since
+    m = math.floor(s / 60)
+    s -= m * 60
+    return "%dm %ds" % (m, s)
 
 
 def debug_input_nan_inf(inputs):
