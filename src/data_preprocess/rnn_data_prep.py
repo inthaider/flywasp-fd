@@ -99,13 +99,13 @@ class RNNDataPrep:
         Args:
             df_processed (Optional[pd.DataFrame]): The preprocessed
                 DataFrame. Defaults to None.
-            train_test_path (Optional[str  |  Path]): The path to the
+            train_test_path (Optional[str | Path]): The path to the
                 train/test data. Defaults to None.
 
         Raises:
             ValueError: If both df_processed and train_test_path are
                 provided.
-            ValueError: If neither df_processed nor train_test_path are
+            ValueError: If neither df_processed nor train_test_path is
                 provided.
         """
         logger.info("Setting the data source for RNNDataPrep...\n")
@@ -117,16 +117,18 @@ class RNNDataPrep:
         elif df_processed is not None:
             self.data_source = df_processed
             logger.info(
-                "DataFrame set as data_source.\nUse get_rnn_data() with the "
-                "required params to generate+retrieve train/test splits.\n"
+                "Preprocessed DataFrame set as data_source.\nUse "
+                "get_rnn_data() with the required params to generate+retrieve "
+                "train/test splits.\n"
             )
         elif train_test_path is not None:
             train_test_path = Path(train_test_path)
             self.data_source = train_test_path
             data_loader = DataLoader()
-            self.train_test_dict = data_loader.load_train_test_data(
-                train_test_path
-            )
+            (
+                self.train_test_dict,
+                self.test_indices,
+            ) = data_loader.load_train_test_data(train_test_path)
             logger.info(
                 "Train/test loaded from file as data_source.\nUse "
                 "get_rnn_data() without params to retrieve train/test splits."
@@ -136,13 +138,14 @@ class RNNDataPrep:
             raise ValueError(
                 "ValueError: Either df or data_path must be provided."
             )
+        return self
 
     def get_rnn_data(
         self,
         sequence_length: int = 3,
         split_ratio: float = 2 / 3,
         rand_oversample: bool = False,
-    ):
+    ) -> Tuple[Dict[str, np.ndarray], np.ndarray]:
         """
         Returns the train/test data splits for the RNN model.
 
@@ -160,13 +163,18 @@ class RNNDataPrep:
                 a dictionary of train/test splits and the test indices,
                 all as NumPy arrays.
         """
+        if self.data_source is None:
+            raise ValueError(
+                "ValueError: data_source is None. Please set the data source "
+                "using set_data_source() before calling get_rnn_data()."
+            )
         logger.info("Getting train-test data splits...\n")
         if isinstance(self.data_source, pd.DataFrame):
             return self.prepare_rnn_data(
                 sequence_length, split_ratio, rand_oversample
             )
         else:
-            return self.data_source
+            return self.train_test_dict, self.test_indices
 
     def prepare_rnn_data(
         self,
@@ -236,7 +244,7 @@ class RNNDataPrep:
         # ? method that uses them?
         assert isinstance(
             self.data_source, pd.DataFrame
-        ), "df must be a Pandas DataFrame."
+        ), "df must be a DataFrame."
         assert isinstance(sequence_length, int), "sequence_length must be int."
         assert 0 < split_ratio < 1, "split_ratio must be float between 0 & 1."
         logger.debug("Initial checks and setup completed.")
@@ -382,7 +390,7 @@ class RNNDataPrep:
             target = data[i + sequence_length, -1]
             # -1 because we're dropping the target column in the X
             # sequences
-            sequence = data[i : i + sequence_length, :-1]
+            sequence = data[i: i + sequence_length, :-1]
             # Check if there are any missing values in the sequence or
             # target
             if not np.isnan(sequence).any() and not np.isnan(target):
