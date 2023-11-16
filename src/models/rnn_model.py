@@ -88,7 +88,7 @@ class RNN(nn.Module):
 
         # Create an RNN layer with the specified hyperparameters
         self.rnn = nn.RNN(
-            input_size=hidden_size,
+            input_size=input_size,
             hidden_size=hidden_size,
             num_layers=num_layers,
             nonlinearity=nonlinearity,
