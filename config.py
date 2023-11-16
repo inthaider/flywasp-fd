@@ -34,14 +34,13 @@ FF_MW_DATA_FILE = INTERIM_DATA_DIR / "ff-mw.pkl"
 # ******************************************************************** #
 #                              LOGGING                                 #
 # ******************************************************************** #
-def get_tb_log_dir():
-    """Returns the path to the tensorboard log directory.
-    """
+def get_tb_log_dir(device="cpu"):
+    """Returns the path to the tensorboard log directory."""
     return os.path.join(
         PROJECT_ROOT,
         LOGS_DIR,
         "tb_runs",
-        get_current_time() + "_" + HOST_NAME,
+        get_current_time() + "_" + HOST_NAME + str(device),
     )
 
 
