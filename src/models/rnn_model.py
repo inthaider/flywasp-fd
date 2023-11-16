@@ -128,6 +128,7 @@ class WalkDataset(Dataset):
         Args:
             X (numpy.ndarray): The input data.
             Y (numpy.ndarray): The target data.
+            device (torch.device): The device to move the tensors to.
         """
         # Convert the input and target data to PyTorch tensors
         self.X = torch.from_numpy(X).float()
@@ -159,26 +160,9 @@ class WalkDataset(Dataset):
         return self.X[idx], self.Y[idx]
 
 
-def init_param_weights(m):
-    """
-    Optional function for weight initialization.
-
-    Uses Xavier uniform initialization for weights and constant
-    initialization for biases.
-
-    Args:
-        m (torch.nn.Module): The module to initialize. Only applies to
-        Linear layers.
-    """
-    # If the module is a linear layer, initialize the weights with
-    #  Xavier uniform initialization and the biases with a constant
-    #  value of 0.01
-    if isinstance(m, nn.Linear):
-        torch.nn.init.xavier_uniform_(m.weight)
-        m.bias.data.fill_(0.01)
-
-
-def data_loaders(X_train, Y_train, X_test, Y_test, batch_size):
+def data_loaders(
+    X_train, Y_train, X_test, Y_test, batch_size, device, **kwargs
+):
     """
     Loads the training and testing data into PyTorch DataLoader objects.
 
@@ -188,62 +172,28 @@ def data_loaders(X_train, Y_train, X_test, Y_test, batch_size):
         X_test (numpy.ndarray): The testing input data.
         Y_test (numpy.ndarray): The testing target data.
         batch_size (int): The batch size.
+        device (torch.device): The device to move the tensors to.
+        **kwargs: Additional keyword arguments.
 
     Returns:
         tuple: A tuple containing the training data loader and the
             testing data loader.
     """
+    print(f"\n\n{device.type}")
+    if device.type == "mps":
+        print("Using kwargs for data loaders\n\n")
+    kwargs = (
+        kwargs if device.type == "mps" else {}
+    )
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
     train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=False
+        train_dataset, batch_size=batch_size, shuffle=False, **kwargs
     )
     test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False
+        test_dataset, batch_size=batch_size, shuffle=False, **kwargs
     )
     return train_loader, test_loader
-
-
-def _init_cross_entropy_weights(Y_train):
-    """
-    Initialize the weights for the cross entropy loss function.
-
-    Args:
-        Y_train (numpy.ndarray): The training target data.
-
-    Returns:
-        torch.Tensor: The weights for the cross entropy loss function.
-    """
-    class_counts = [
-        pd.Series(Y_train).value_counts()[0],
-        pd.Series(Y_train).value_counts()[1],
-    ]
-
-    # Compute class weights
-    weights = 1.0 / torch.tensor(class_counts, dtype=torch.float)
-    weights = weights / weights.sum()
-    return weights
-
-
-def loss_function(Y_train):
-    """
-    Initialize the loss function.
-
-    Args:
-        Y_train (numpy.ndarray): The training target data.
-
-    Returns:
-        tuple: A tuple containing the loss function and the weights for
-            the cross entropy loss function.
-    """
-    # Calculating weights for class imbalance to pass to the loss
-    # function
-    cross_entropy_weights = _init_cross_entropy_weights(Y_train)
-
-    # Using CrossEntropyLoss as the loss function with weights
-    criterion = nn.CrossEntropyLoss(weight=cross_entropy_weights)
-
-    return criterion, cross_entropy_weights
 
 
 def configure_model(
@@ -283,10 +233,10 @@ def configure_model(
     ).to(device)
 
     # Apply the weight initialization
-    model.apply(init_param_weights)
+    model = (model.apply(init_param_weights)).to(device)
 
     # Configure loss function
-    criterion, cross_entropy_weights = loss_function(Y_train)
+    criterion, cross_entropy_weights = loss_function(Y_train, device)
 
     # Using SGD as the optimizer
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
@@ -295,3 +245,64 @@ def configure_model(
     scheduler = CosineAnnealingLR(optimizer, T_max=50)
 
     return model, criterion, optimizer, scheduler, cross_entropy_weights
+
+
+def init_param_weights(m):
+    """
+    Optional function for weight initialization.
+
+    Uses Xavier uniform initialization for weights and constant
+    initialization for biases.
+
+    Args:
+        m (torch.nn.Module): The module to initialize. Only applies to
+        Linear layers.
+    """
+    # If the module is a linear layer, initialize the weights with
+    #  Xavier uniform initialization and the biases with a constant
+    #  value of 0.01
+    if isinstance(m, nn.Linear):
+        torch.nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0.01)
+
+
+def loss_function(Y_train, device):
+    """
+    Initialize the loss function.
+
+    Args:
+        Y_train (numpy.ndarray): The training target data.
+
+    Returns:
+        tuple: A tuple containing the loss function and the weights for
+            the cross entropy loss function.
+    """
+    # Calculating weights for class imbalance to pass to the loss
+    # function
+    cross_entropy_weights = _init_cross_entropy_weights(Y_train)
+
+    # Using CrossEntropyLoss as the loss function with weights
+    criterion = nn.CrossEntropyLoss(weight=cross_entropy_weights).to(device)
+
+    return criterion, cross_entropy_weights
+
+
+def _init_cross_entropy_weights(Y_train):
+    """
+    Initialize the weights for the cross entropy loss function.
+
+    Args:
+        Y_train (numpy.ndarray): The training target data.
+
+    Returns:
+        torch.Tensor: The weights for the cross entropy loss function.
+    """
+    class_counts = [
+        pd.Series(Y_train).value_counts()[0],
+        pd.Series(Y_train).value_counts()[1],
+    ]
+
+    # Compute class weights
+    weights = 1.0 / torch.tensor(class_counts, dtype=torch.float)
+    weights = weights / weights.sum()
+    return weights
