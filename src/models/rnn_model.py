@@ -71,35 +71,32 @@ class RNN(nn.Module):
             hidden_size (int): The number of features in the hidden
                 state.
             output_size (int): The number of output features.
+            num_layers (int): The number of RNN layers.
+            nonlinearity (str, optional): The non-linearity to use.
+                Default is "tanh".
             batch_first (bool, optional): If True, then the input and
                 output tensors are provided as (batch, seq, feature).
                 Default is True.
         """
         # Get the current timestamp as a string in the format YYYYMMDD
         self.timestamp = datetime.now().strftime("%Y%m%d")
-
         # Call the __init__ method of the parent class (nn.Module)
         super(RNN, self).__init__()
 
-        # Set the hidden_size attribute of the RNN object
         self.hidden_size = hidden_size
+        self.num_layers = num_layers
 
-        # Create an RNN layer with the specified input_size,
-        #  hidden_size, and batch_first parameters
+        # Create an RNN layer with the specified hyperparameters
         self.rnn = nn.RNN(
-            input_size,
-            hidden_size,
-            num_layers,
-            nonlinearity,
+            input_size=hidden_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            nonlinearity=nonlinearity,
             batch_first=batch_first,
         )
-
-        # Create a linear layer with the specified hidden_size and
-        #  output_size parameters
+        # Create a fully connected linear layer
         self.fc = nn.Linear(hidden_size, output_size)
-
-        # Create a sigmoid activation function
-        self.sigmoid = nn.Sigmoid()
+        self.sigmoid = nn.Sigmoid()  # Create sigmoid activation
 
     def forward(self, x):
         """
@@ -115,7 +112,7 @@ class RNN(nn.Module):
             Using `.to(x.device)` in the `forward()` method ensures that
             the model is moved to the same device as the input data.
         """
-        h0 = torch.zeros(1, x.size(0), self.hidden_size).to(
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(
             x.device
         )  # initial hidden state
         # out: tensor of shape (batch_size, seq_length, hidden_size)
@@ -228,6 +225,8 @@ def configure_model(
         hidden_size (int): The number of features in the hidden state.
         output_size (int): The number of output features.
         learning_rate (float): The learning rate.
+        num_hidden_layers (int): The number of hidden layers.
+        nonlinearity (str): The non-linearity to use.
         device (str): The device to use for training.
         batch_first (bool, optional): If True, then the input and output
             tensors are provided as (batch, seq, feature). Default is
