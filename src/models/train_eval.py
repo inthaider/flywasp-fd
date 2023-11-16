@@ -45,14 +45,17 @@ Note:
 """
 
 import logging
+import time
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import auc, f1_score, precision_recall_curve
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter  # type: ignore
+from tqdm.auto import tqdm
 
+from config import get_tb_log_dir
 from src.models.helpers_rnn import (
     debug_grad_nan_inf,
     debug_input_nan_inf,
@@ -62,6 +65,7 @@ from src.models.helpers_rnn import (
 from src.models.rnn_model import configure_model, data_loaders
 
 logger = logging.getLogger(__name__)
+writer = SummaryWriter(get_tb_log_dir())  # for Tensorboard logging
 
 
 def train_eval_model(
@@ -78,6 +82,7 @@ def train_eval_model(
     device,
     batch_first=True,
     prints_per_epoch=10,
+    **kwargs,
 ):
     """
     Trains the RNN model and evaluates it on a test dataset.
@@ -98,17 +103,25 @@ def train_eval_model(
             tensors are provided as (batch, seq, feature). Default is True.
         prints_per_epoch (int, optional): The number of times to print
             the loss per epoch. Default is 10.
+        **kwargs: Additional keyword arguments to pass to the data
 
     Returns:
         model (torch.nn.Module): The trained RNN model.
         labels_and_probs (numpy.ndarray): A numpy array containing the
             true labels, predicted labels, and predicted probabilities.
     """
-    # Create the data loaders
+    # ========================= Configuration ======================== #
+    # The num_workers parameter determines the number of subprocesses
+    # to use for data loading. When num_workers > 0, multiple worker
+    # processes are used. If num_workers = 0, then the data will be
+    # loaded in the main process.
+    # The pin_memory parameter allows you to set the value of the
+    # pin_memory flag for the DataLoader. If pin_memory = True, the
+    # data loader will copy Tensors into GPU pinned memory before
+    # returning them.
     train_loader, test_loader = data_loaders(
-        X_train, Y_train, X_test, Y_test, batch_size
-    )
-    # Define the model, loss function, and optimizer
+        X_train, Y_train, X_test, Y_test, batch_size, device, **kwargs
+    )  # Create the data loaders
     (
         model,
         criterion,
@@ -123,20 +136,25 @@ def train_eval_model(
         learning_rate,
         device,
         batch_first,
-    )
-
-    # Create a SummaryWriter for logging to TensorBoard
-    writer = SummaryWriter()
-
+    )  # Define the model, loss function, and optimizer
     # **************************************************************** #
     #                   TRAIN AND EVALUATE THE MODEL                   #
     # **************************************************************** #
-    for epoch in range(num_epochs):
+    start_time = time.time()  # Start a timer
+    # Wrap your range with tqdm to create a progress bar for the epochs
+    for epoch in tqdm(
+        range(num_epochs),
+        desc="Epochs",
+        total=num_epochs,
+        position=0,
+        leave=True,
+    ):
         print(f"Epoch {epoch+1}/{num_epochs}\n-------------------------------")
 
+        # ========================= Training ========================= #
         print("Training the model...")
-        # Train the model
-        train_loss, train_f1 = train_loop(
+        start_time_train = time.time()  # Start a timer for training
+        train_loss, train_acc, train_f1 = train_loop(
             model,
             batch_size,
             device,
@@ -145,51 +163,88 @@ def train_eval_model(
             criterion,
             optimizer,
             epoch,
+        )  # Train the model
+        end_time_train = time.time()  # Stop the training timer
+        elapsed_time_train = round((end_time_train - start_time_train) / 60, 1)
+        logger.info(
+            f"Training Epoch {epoch+1} took {elapsed_time_train} minutes."
         )
+        # ------------------------------------------------------------ #
+        # ======================== Evaluating ======================== #
         print("Evaluating the model...")
-        # Evaluate/Test the model
+        start_time_test = time.time()  # Start a timer for evaluation
         (
             test_loss,
             test_acc,
             test_f1,
             test_pr_auc,
             test_labels_and_probs,
-        ) = test_loop(model, device, test_loader, criterion)
-
-        # Update the learning rate
-        scheduler.step()
-        # According to GitHub Copilot, CosineAnnealingLR does not take a
-        # metric as an argument so it shouldn't be necessary to pass the
-        # test loss to the scheduler (like below)
-        # scheduler.step(test_loss)
-
-        # Log loss and accuracy to TensorBoard
-        writer.add_scalar("Train Loss", train_loss, epoch)
-        writer.add_scalar("Train F1 Score", train_f1, epoch)
-        writer.add_scalar("Test Loss", test_loss, epoch)
-        writer.add_scalar("Test Accuracy", test_acc, epoch)
-        writer.add_scalar("Test F1 Score", test_f1, epoch)
-        writer.add_scalar("Test Precision-Recall AUC", test_pr_auc, epoch)
-
-        print("Training Data Distribution:")
-        print(pd.Series(test_labels_and_probs[0]).value_counts().to_dict())
-        print("Predicted Data Distribution:")
-        print(pd.Series(test_labels_and_probs[1]).value_counts().to_dict())
-
-        print(
-            f"\n Epoch {epoch+1} Metrics -- Train Loss: {train_loss:.4f}, "
-            f"Train F1 Score: {train_f1:.4f}, Test Loss: {test_loss:.4f}, "
-            f"Test Acc: {test_acc:.4f}, Test F1: {test_f1:.4f}, "
-            f"Test PR AUC: {test_pr_auc:.4f}\n"
+        ) = test_loop(
+            model, device, test_loader, criterion, epoch
+        )  # Evaluate/Test the model
+        end_time_test = time.time()  # Stop the evaluation timer
+        elapsed_time_test = round((end_time_test - start_time_test) / 60, 1)
+        logger.info(
+            f"Evaluating Epoch {epoch+1} took {elapsed_time_test} minutes."
+        )
+        # ------------------------------------------------------------ #
+        scheduler.step()  # Update the learning rate
+        """
+        According to GitHub Copilot, CosineAnnealingLR does not take a
+        metric as an argument so it shouldn't be necessary to pass the
+        test loss to the scheduler (like below)
+        scheduler.step(test_loss)
+        """
+        # ======================== Tensorboard ======================= #
+        metrics = {
+            f"Mean Loss/train_epoch/{device}": train_loss,
+            f"Accuracy/train_epoch/{device}": train_acc,
+            f"F1 Score/train_epoch/{device}": train_f1,
+            f"Mean Loss/test_epoch/{device}": test_loss,
+            f"Accuracy/test_epoch/{device}": test_acc,
+            f"F1 Score/test_epoch/{device}": test_f1,
+            f"Precision-Recall AUC/test_epoch/{device}": test_pr_auc,
+        }
+        # Log to TensorBoard
+        for metric_name, metric_value in metrics.items():
+            writer.add_scalar(metric_name, metric_value, epoch)
+        writer.add_pr_curve(
+            "PR Curve/test_epoch/{device}",
+            test_labels_and_probs[0],
+            test_labels_and_probs[1],
+            epoch,
+        )
+        # ------------------------------------------------------------ #
+        logger.info("Training Data Distribution:")
+        logger.info(
+            pd.Series(test_labels_and_probs[0]).value_counts().to_dict()
+        )
+        logger.info("Predicted Data Distribution:")
+        logger.info(
+            pd.Series(test_labels_and_probs[1]).value_counts().to_dict()
+        )
+        # ------------------------------------------------------------ #
+        logger.info(
+            f"Epoch {epoch+1} Metrics --\n"
+            f"Train Loss: {train_loss:.4f},\n"
+            f"Train F1 Score: {train_f1:.4f},\n"
+            f"Train Acc: {(100*train_acc):>0.1f}%,\n"
+            f"Test Loss: {test_loss:.4f},\n"
+            f"Test Acc: {test_acc:.4f},\n"
+            f"Test F1: {test_f1:.4f},\n"
+            f"Test PR AUC: {test_pr_auc:.4f}\n\n"
         )
 
-    # Flush the SummaryWriter doing this ensures that the metrics are
-    # written to disk
-    writer.flush()
-    # Close the SummaryWriter
-    writer.close()
+    end_time = time.time()  # Stop the timer
+    elapsed_time = round((end_time - start_time) / 60, 1)
+    logger.info(
+        f"The entire train+eval code took {elapsed_time} minutes to run.\n\n"
+    )
 
-    return model, test_labels_and_probs
+    # Flush the SummaryWriter to ensure that metrics are written to disk
+    writer.flush()
+    writer.close()  # Close the SummaryWriter
+    return model, test_labels_and_probs  # type: ignore
 
 
 def train_loop(
@@ -226,45 +281,61 @@ def train_loop(
     # Print loss prints_per_epoch times per epoch
     print_interval = int(max(num_batches // prints_per_epoch, 1))
     # --------------------#
-    print(f"Print interval: {print_interval}")  # Debugging line
+    # print(f"Print interval: {print_interval}")  # Debugging line
     # --------------------# Set the model to training mode - important
     # for batch normalization and dropout layers This is best practice,
     # but is it necessary here in this situation?
     model.train()
     # Initialize running loss & sum of squared gradients and parameters
     running_loss = 0.0
+    correct = 0
+    total = 0
     sum_sq_gradients = 0.0
     sum_sq_parameters = 0.0
     # Initialize true and predicted labels for F1 score calculation
     true_labels = []
     pred_labels = []
 
-    print(f"Number of batches: {num_batches}")  # Print number of batches
-    print(f"Batch size: {batch_size}")  # Print batch size
-    for i, (inputs, labels) in enumerate(train_loader):
+    logger.info(f"Number of batches: {num_batches}")  # Print number of batches
+    logger.info(f"Batch size: {batch_size}\n")  # Print batch size
+    # Wrap your loader with tqdm to create a progress bar for the
+    # training batches
+    for i, (inputs, labels) in tqdm(
+        enumerate(train_loader),
+        desc="Training...",
+        total=len(train_loader),
+        position=0,
+        leave=False,
+    ):
+        optimizer.zero_grad()  # Zero the parameter gradients
         # Debugging: Check for NaN or inf in inputs
         debug_input_nan_inf(inputs)
-
         # Note that i is the index of the batch and goes up to
         # num_batches - 1
         inputs, labels = inputs.to(device), labels.to(
             device
         )  # Move tensors to device, e.g. GPU
-        optimizer.zero_grad()  # Zero the parameter gradients
 
         # Compute predicted output and loss
         outputs = model(inputs)  # Forward pass
         loss = criterion(outputs, labels)  # Compute loss
+
+        # log the loss
+        writer.add_scalar(
+            f"Loss Curve/train/{device}",
+            loss.item(),
+            epoch * len(train_loader) + i,
+        )
 
         # Backpropagation
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
 
-        # Debugging: Check for NaN or inf in loss
-        debug_loss_nan_inf(epoch, i, loss)
-        # Debugging: Check for NaN or inf in gradients
-        debug_grad_nan_inf(model, epoch, i)
+        # # Debugging: Check for NaN or inf in loss
+        # debug_loss_nan_inf(epoch, i, loss)
+        # # Debugging: Check for NaN or inf in gradients
+        # debug_grad_nan_inf(model, epoch, i)
         # Debugging: Monitor sum of squared gradients and parameters
         sum_sq_gradients, sum_sq_parameters = debug_sumsq_grad_param(
             model, sum_sq_gradients, sum_sq_parameters
@@ -275,6 +346,12 @@ def train_loop(
         # the index of the maximum value in each row (i.e. the predicted
         # class) and returning a tensor of shape (batch_size, 1)
         _, predicted = torch.max(outputs.data, 1)
+
+        # Accumulate total number of samples
+        total += labels.size(0)
+        # Accumulate number of correct predictions
+        correct += (predicted == labels).sum().item()
+
         # Accumulate true and predicted labels for F1 score calculation
         true_labels.extend(labels.cpu().numpy())
         pred_labels.extend(predicted.cpu().numpy())
@@ -286,6 +363,16 @@ def train_loop(
             )  # loss and current iteration
             print(f"Loss: {loss:>7f}  [{current_iter:>5d}/{size_train:>5d}]")
 
+    writer.add_scalar(
+        f"Sum Squared Gradients/train_epoch/{device}",
+        sum_sq_gradients,
+        epoch,
+    )
+    writer.add_scalar(
+        f"Sum Squared Parameters/train_epoch/{device}",
+        sum_sq_parameters,
+        epoch,
+    )
     # Log sum of squared gradients and parameters after each epoch
     logger.info(
         f"\nSum squared grads/params in Epoch {epoch+1}:\n"
@@ -294,18 +381,20 @@ def train_loop(
     )
     # Calculate average loss over all batches
     train_loss = running_loss / len(train_loader)
+    train_acc = correct / total
+
     # Calculate F1 score for training data
     train_f1 = f1_score(true_labels, pred_labels)
 
-    print(
-        f"\nTrain Performance: \n Avg loss: {train_loss:>8f}, "
-        f"F1 Score: {train_f1:.4f} \n"
+    logger.info(
+        f"\nTrain Performance: \n Accuracy: {(100*train_acc):>0.1f}%,"
+        f"Avg loss: {train_loss:>8f}, F1 Score: {train_f1:.4f} \n"
     )
 
-    return train_loss, train_f1
+    return train_loss, train_acc, train_f1
 
 
-def test_loop(model, device, test_loader, criterion):
+def test_loop(model, device, test_loader, criterion, epoch):
     """
     Evaluates the performance of a trained RNN model on a test dataset.
 
@@ -346,7 +435,15 @@ def test_loop(model, device, test_loader, criterion):
     # unnecessary gradient computations and memory usage for tensors
     # with requires_grad=True
     with torch.no_grad():
-        for i, (inputs, labels) in enumerate(test_loader):
+        # Wrap your loader with tqdm to create a progress bar for the
+        # evaluation batches
+        for i, (inputs, labels) in tqdm(
+            enumerate(test_loader),
+            desc="Testing...",
+            total=len(test_loader),
+            position=0,
+            leave=False,
+        ):
             inputs, labels = inputs.to(device), labels.to(
                 device
             )  # Move tensors to device, e.g. GPU
@@ -355,6 +452,13 @@ def test_loop(model, device, test_loader, criterion):
             loss = criterion(outputs, labels)  # Compute loss
             running_loss += loss.item()  # Accumulate loss
             _, predicted = torch.max(outputs.data, 1)  # Get predicted class
+
+            # log the loss
+            writer.add_scalar(
+                f"Loss Curve/test/{device}",
+                loss.item(),
+                epoch * len(test_loader) + i,
+            )
 
             # Accumulate total number of samples
             total += labels.size(0)
@@ -382,8 +486,8 @@ def test_loop(model, device, test_loader, criterion):
     test_prec, test_rec, _ = precision_recall_curve(true_labels, pred_probs)
     test_pr_auc = auc(test_rec, test_prec)
 
-    print(
-        f"Test Performance: \n Accuracy: {(100*test_acc):>0.1f}%, "
+    logger.info(
+        f"Test Performance: \n Accuracy: {(100*test_acc):>0.1f}%,"
         f"Avg loss: {test_loss:>8f}, F1 Score: {test_f1:.4f} \n"
     )
 
