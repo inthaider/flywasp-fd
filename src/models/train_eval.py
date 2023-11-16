@@ -16,12 +16,12 @@ Functions:
         device, batch_first=True, prints_per_epoch=10
     ) -> (torch.nn.Module, numpy.ndarray):
         Trains the RNN model and evaluates it on a test dataset.
-    train_loop(
+    _train_loop(
         model, batch_size, device, prints_per_epoch,
         train_loader,criterion, optimizer, epoch
     ) -> (float, float):
         Trains an RNN model on a training dataset for one epoch.
-    test_loop(model, device, test_loader, criterion) -> (
+    _test_loop(model, device, test_loader, criterion) -> (
         float, float, float, float, numpy.ndarray
     ):
         Evaluates the performance of a trained RNN model on a test
@@ -49,10 +49,11 @@ import time
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import auc, f1_score, precision_recall_curve
 import torch
 import torch.nn.functional as F
-from sklearn.metrics import auc, f1_score, precision_recall_curve
 from torch.utils.tensorboard import SummaryWriter  # type: ignore
+from torchinfo import summary
 from tqdm.auto import tqdm
 
 from config import get_tb_log_dir
@@ -65,7 +66,7 @@ from src.models.helpers_rnn import (
 from src.models.rnn_model import configure_model, data_loaders
 
 logger = logging.getLogger(__name__)
-writer = SummaryWriter(get_tb_log_dir())  # for Tensorboard logging
+writer = None
 
 
 def train_eval_model(
@@ -98,7 +99,7 @@ def train_eval_model(
         num_epochs (int): The number of epochs to train the model.
         batch_size (int): The batch size.
         learning_rate (float): The learning rate.
-        device (str): The device to use for training.
+        device (torch.device): The device to use for training.
         batch_first (bool, optional): If True, then the input and output
             tensors are provided as (batch, seq, feature). Default is True.
         prints_per_epoch (int, optional): The number of times to print
@@ -137,9 +138,21 @@ def train_eval_model(
         device,
         batch_first,
     )  # Define the model, loss function, and optimizer
+    # ====================== Print model summary ===================== #
+    logger.info("\n\nModel Summary:")
+    model.eval()  # Switch to evaluation mode for summary
+    print(summary(model, input_size=(batch_size, 5, 19), device=device))
+    # ---------------------------------------------------------------- #
+    global writer
+    writer = SummaryWriter(get_tb_log_dir(device))  # Tensorboard log
+    # ---------------------------------------------------------------- #
     # **************************************************************** #
     #                   TRAIN AND EVALUATE THE MODEL                   #
     # **************************************************************** #
+    # Set the model to training mode - important for batch normalization
+    # and dropout layers This is best practice, but is it necessary here
+    # in this situation?
+    model.train()
     start_time = time.time()  # Start a timer
     # Wrap your range with tqdm to create a progress bar for the epochs
     for epoch in tqdm(
@@ -154,7 +167,7 @@ def train_eval_model(
         # ========================= Training ========================= #
         print("Training the model...")
         start_time_train = time.time()  # Start a timer for training
-        train_loss, train_acc, train_f1 = train_loop(
+        train_loss, train_acc, train_f1 = _train_loop(
             model,
             batch_size,
             device,
@@ -179,7 +192,7 @@ def train_eval_model(
             test_f1,
             test_pr_auc,
             test_labels_and_probs,
-        ) = test_loop(
+        ) = _test_loop(
             model, device, test_loader, criterion, epoch
         )  # Evaluate/Test the model
         end_time_test = time.time()  # Stop the evaluation timer
@@ -197,19 +210,19 @@ def train_eval_model(
         """
         # ======================== Tensorboard ======================= #
         metrics = {
-            f"Mean Loss/train_epoch/{device}": train_loss,
-            f"Accuracy/train_epoch/{device}": train_acc,
-            f"F1 Score/train_epoch/{device}": train_f1,
-            f"Mean Loss/test_epoch/{device}": test_loss,
-            f"Accuracy/test_epoch/{device}": test_acc,
-            f"F1 Score/test_epoch/{device}": test_f1,
-            f"Precision-Recall AUC/test_epoch/{device}": test_pr_auc,
+            f"Mean Loss/{str(device)}/train_epoch": train_loss,
+            f"Accuracy/{str(device)}/train_epoch": train_acc,
+            f"F1 Score/{str(device)}/train_epoch": train_f1,
+            f"Mean Loss/{str(device)}/test_epoch": test_loss,
+            f"Accuracy/{str(device)}/test_epoch": test_acc,
+            f"F1 Score/{str(device)}/test_epoch": test_f1,
+            f"Precision-Recall AUC/{str(device)}/test_epoch": test_pr_auc,
         }
         # Log to TensorBoard
         for metric_name, metric_value in metrics.items():
             writer.add_scalar(metric_name, metric_value, epoch)
         writer.add_pr_curve(
-            "PR Curve/test_epoch/{device}",
+            f"PR Curve/{str(device)}/test_epoch",
             test_labels_and_probs[0],
             test_labels_and_probs[1],
             epoch,
@@ -227,10 +240,10 @@ def train_eval_model(
         logger.info(
             f"Epoch {epoch+1} Metrics --\n"
             f"Train Loss: {train_loss:.4f},\n"
-            f"Train F1 Score: {train_f1:.4f},\n"
-            f"Train Acc: {(100*train_acc):>0.1f}%,\n"
             f"Test Loss: {test_loss:.4f},\n"
-            f"Test Acc: {test_acc:.4f},\n"
+            f"Train Acc: {(100*train_acc):>0.1f}%,\n"
+            f"Test Acc: {(100*test_acc):>0.1f}%,\n"
+            f"Train F1 Score: {train_f1:.4f},\n"
             f"Test F1: {test_f1:.4f},\n"
             f"Test PR AUC: {test_pr_auc:.4f}\n\n"
         )
@@ -247,7 +260,7 @@ def train_eval_model(
     return model, test_labels_and_probs  # type: ignore
 
 
-def train_loop(
+def _train_loop(
     model,
     batch_size,
     device,
@@ -263,7 +276,7 @@ def train_loop(
     Args:
         model (torch.nn.Module): The RNN model to train.
         batch_size (int): The batch size.
-        device (str): The device to use for training.
+        device (torch.device): The device to use for training.
         prints_per_epoch (int): The number of times to print the loss
             per epoch.
         train_loader (torch.utils.data.DataLoader): The training data
@@ -276,16 +289,18 @@ def train_loop(
         train_loss (float): The average training loss over all batches.
         train_f1 (float): The training F1 score.
     """
+    global writer  # Use the global SummaryWriter object
+    assert (
+        writer is not None
+    ), "Call train_eval_model() before calling _train_loop()"
+    # ---------------------------------------------------------------- #
     size_train = len(train_loader.dataset)  # Number of training samples
     num_batches = len(train_loader)  # Number of batches
     # Print loss prints_per_epoch times per epoch
     print_interval = int(max(num_batches // prints_per_epoch, 1))
     # --------------------#
     # print(f"Print interval: {print_interval}")  # Debugging line
-    # --------------------# Set the model to training mode - important
-    # for batch normalization and dropout layers This is best practice,
-    # but is it necessary here in this situation?
-    model.train()
+    # --------------------#
     # Initialize running loss & sum of squared gradients and parameters
     running_loss = 0.0
     correct = 0
@@ -305,7 +320,7 @@ def train_loop(
         desc="Training...",
         total=len(train_loader),
         position=0,
-        leave=False,
+        leave=True,
     ):
         optimizer.zero_grad()  # Zero the parameter gradients
         # Debugging: Check for NaN or inf in inputs
@@ -322,7 +337,7 @@ def train_loop(
 
         # log the loss
         writer.add_scalar(
-            f"Loss Curve/train/{device}",
+            f"Loss Curve/{str(device)}/train",
             loss.item(),
             epoch * len(train_loader) + i,
         )
@@ -364,12 +379,12 @@ def train_loop(
             print(f"Loss: {loss:>7f}  [{current_iter:>5d}/{size_train:>5d}]")
 
     writer.add_scalar(
-        f"Sum Squared Gradients/train_epoch/{device}",
+        f"Sum Squared Gradients/{str(device)}/train_epoch",
         sum_sq_gradients,
         epoch,
     )
     writer.add_scalar(
-        f"Sum Squared Parameters/train_epoch/{device}",
+        f"Sum Squared Parameters/{str(device)}/train_epoch",
         sum_sq_parameters,
         epoch,
     )
@@ -394,13 +409,13 @@ def train_loop(
     return train_loss, train_acc, train_f1
 
 
-def test_loop(model, device, test_loader, criterion, epoch):
+def _test_loop(model, device, test_loader, criterion, epoch):
     """
     Evaluates the performance of a trained RNN model on a test dataset.
 
     Args:
         model (torch.nn.Module): The trained RNN model.
-        device (str): The device to use for evaluation.
+        device (torch.device): The device to use for evaluation.
         test_loader (torch.utils.data.DataLoader): The test data loader.
         criterion (torch.nn.modules.loss._Loss): The loss function.
 
@@ -414,6 +429,11 @@ def test_loop(model, device, test_loader, criterion, epoch):
 
     TODO: Check/integrate changes from FD.
     """
+    global writer  # Use the global SummaryWriter object
+    assert (
+        writer is not None
+    ), "Call train_eval_model() before calling _test_loop()"
+    # ---------------------------------------------------------------- #
     # Set the model to evaluation mode - important for batch
     # normalization and dropout layers This is best practice, but is it
     # necessary here in this situation?
@@ -442,7 +462,7 @@ def test_loop(model, device, test_loader, criterion, epoch):
             desc="Testing...",
             total=len(test_loader),
             position=0,
-            leave=False,
+            leave=True,
         ):
             inputs, labels = inputs.to(device), labels.to(
                 device
@@ -455,7 +475,7 @@ def test_loop(model, device, test_loader, criterion, epoch):
 
             # log the loss
             writer.add_scalar(
-                f"Loss Curve/test/{device}",
+                f"Loss Curve/{str(device)}/test",
                 loss.item(),
                 epoch * len(test_loader) + i,
             )
