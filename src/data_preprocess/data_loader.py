@@ -1,7 +1,7 @@
 import logging
 import pickle
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -32,7 +32,8 @@ class DataLoader:
             Loads the raw DataFrame from a pickled file.
         load_processed_data(pickle_path: str | Path) -> pd.DataFrame:
             Loads the processed DataFrame from a pickled file.
-        load_train_test_data(data_dir: str | Path) -> Dict[str, np.ndarray]:
+        load_train_test_data(data_dir: str | Path) -> Dict[str,
+        np.ndarray]:
             Loads 4 train/test datasets for the RNN from .pkl files.
     """
 
@@ -42,6 +43,7 @@ class DataLoader:
             "raw": None,
             "processed": None,
             "train_test": {},
+            "test_indices": np.array([]),
         }
 
     def _load_data(
@@ -111,18 +113,18 @@ class DataLoader:
 
     def load_train_test_data(
         self, data_dir: str | Path
-    ) -> Dict[str, np.ndarray]:
+    ) -> Tuple[Dict[str, np.ndarray], np.ndarray]:
         """
-        Loads & returns *copies* of x4 train/test data splits for the
-        RNN from .pkl files.
+        Loads & returns *copies* of the 4 train/test data splits and 1
+        test_indices array for the RNN from .pkl files.
 
         Args:
             data_dir (str | Path): The path to the directory containing
-                the 4 .pkl files.
+                the 5 .pkl files.
 
         Returns:
-            Dict[str, np.ndarray]: A dictionary containing copies of the
-                4 train/test datasets.
+            Tuple[Dict[str, np.ndarray], np.ndarray]: A tuple containing
+                the 4 train/test datasets and the test_indices array.
 
         Raises:
             FileNotFoundError: If the directory/any file doesn't exist.
@@ -135,12 +137,7 @@ class DataLoader:
             raise FileNotFoundError(f"No directory found at {dir_path}")
         self.data["paths"]["train_test"] = dir_path
 
-        splits = [
-            "X_train",
-            "Y_train",
-            "X_test",
-            "Y_test",
-        ]
+        splits = ["X_train", "Y_train", "X_test", "Y_test"]
         train_test_dict = {}
         try:
             for s in splits:
@@ -152,10 +149,21 @@ class DataLoader:
                     train_test_dict[s] = pickle.load(file)  # Load
 
             self.data["train_test"] = train_test_dict.copy()  # Copy
+
+            # Load test_indices separately
+            file_path = dir_path / "test_indices.pkl"
+            if not file_path.exists():
+                raise FileNotFoundError(f"No file found at {file_path}\n")
+
+            with open(file_path, "rb") as file:
+                test_indices = pickle.load(file)  # Load
+
+            self.data["test_indices"] = test_indices.copy()  # Copy
+
             logger.info(
-                f"Successfully loaded train/test datasets from {dir_path}.\n"
+                f"Successfully loaded train/test + indices from {dir_path}.\n"
             )
-            return train_test_dict
+            return train_test_dict, test_indices
         except ValueError as e:
             logger.error(f"ValueError loading train/test data: {e}\n")
             raise
