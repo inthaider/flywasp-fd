@@ -10,38 +10,10 @@ tensor, the gradients of the model, and the loss value, and computing
 the sum of squared gradients and parameters for the model.
 
 Functions:
-    train_eval_model(
-        X_train, Y_train, X_test, Y_test, input_size,
-        hidden_size,output_size, num_epochs, batch_size, learning_rate,
-        device, batch_first=True, prints_per_epoch=10
-    ) -> (torch.nn.Module, numpy.ndarray):
-        Trains the RNN model and evaluates it on a test dataset.
-    _train_loop(
-        model, batch_size, device, prints_per_epoch,
-        train_loader,criterion, optimizer, epoch
-    ) -> (float, float):
-        Trains an RNN model on a training dataset for one epoch.
-    _test_loop(model, device, test_loader, criterion) -> (
-        float, float, float, float, numpy.ndarray
-    ):
-        Evaluates the performance of a trained RNN model on a test
-        dataset.
 
 Example:
-    To train and evaluate an RNN model with the provided functions, you
-    would set up your data and hyperparameters, and then call:
 
-    >>> model, labels_and_probs = train_eval_model(
-        X_train, Y_train, X_test, Y_test, input_size=10, hidden_size=20,
-        output_size=2, num_epochs=100, batch_size=32, learning_rate=0.001,
-        device='cuda'
-    )
-
-Note:
-    The training process is logged using TensorBoard, allowing for
-    real-time monitoring of various metrics. It is assumed that the
-    input data is preprocessed and formatted as NumPy arrays suitable
-    for input to an RNN model.
+TODO: Update docstrings
 """
 
 import logging
@@ -57,9 +29,7 @@ from tqdm.auto import tqdm
 
 from src.models.helpers_rnn import (
     create_writer,
-    debug_grad_nan_inf,
     debug_input_nan_inf,
-    debug_loss_nan_inf,
     debug_sumsq_grad_param,
 )
 from src.models.rnn_model import configure_model, data_loaders
@@ -68,6 +38,9 @@ logger = logging.getLogger(__name__)
 writer = None
 
 
+# ******************************************************************** #
+#               HIGHER LEVEL TRAINING+EVALUATION FUNCTION              #
+# ******************************************************************** #
 def train_eval_model(
     X_train,
     Y_train,
@@ -131,6 +104,16 @@ def train_eval_model(
         device=device,
         batch_first=batch_first,
     )  # Define the model, loss function, and optimizer
+    # ====================== Print model summary ===================== #
+    logger.info("\n\nModel Summary:")
+    model.eval()  # Switch to evaluation mode for summary
+    print(
+        summary(
+            model,
+            input_size=(batch_size, X_train.shape[1], X_train.shape[2]),
+            device=device,
+        )
+    )
     # ======== Tensorboard logging & hyperparameters to track ======== #
     global writer
     writer = create_writer(
@@ -139,7 +122,6 @@ def train_eval_model(
     hparams = {
         "input_size": input_size,
         "hidden_units": hidden_size,
-        "output_size": output_size,
         "num_hidden_layers": num_hidden_layers,
         "learning_rate": learning_rate,
         "nonlinearity": nonlinearity,
@@ -164,16 +146,11 @@ def train_eval_model(
         None,
         None,
     )  # Declare metrics to track with hyperparams
-    # ====================== Print model summary ===================== #
-    logger.info("\n\nModel Summary:")
-    model.eval()  # Switch to evaluation mode for summary
-    print(summary(model, input_size=(batch_size, 5, 19), device=device))
     # **************************************************************** #
     #                   TRAIN AND EVALUATE THE MODEL                   #
     # **************************************************************** #
     # Set the model to training mode - important for batch normalization
     # and dropout layers This is best practice, but is it necessary here
-    # in this situation?
     model.train()
     start_time = time.time()  # Start a timer
     for epoch in tqdm(
@@ -293,6 +270,9 @@ def train_eval_model(
     return model, test_labels_and_probs  # type: ignore
 
 
+# ******************************************************************** #
+#                          TRAINING STEP/LOOP                          #
+# ******************************************************************** #
 def _train_loop(
     model,
     batch_size,
@@ -444,6 +424,9 @@ def _train_loop(
     return train_loss, train_acc, train_f1
 
 
+# ******************************************************************** #
+#                            TEST STEP/LOOP                            #
+# ******************************************************************** #
 def _test_loop(model, device, test_loader, criterion, epoch):
     """
     Evaluates the performance of a trained RNN model on a test dataset.
