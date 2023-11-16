@@ -1,15 +1,22 @@
-import logging
-from pathlib import Path
 import hashlib
-
-from datetime import datetime
+import logging
 import pickle
-from typing import Dict, Tuple
 import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Tuple
+
 import numpy as np
 import pandas as pd
 import torch
 import yaml
+
+from config import (
+    PROCESSED_DATA_DIR,
+    RNN_INPUT_DATA_DIR,
+    MODELS_DIR,
+    CONFIGS_DIR,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +28,7 @@ class DataSaver:
     Attributes:
         saved_paths (Dict[str, Path]): A dictionary containing the
             Pathlib paths to the saved files.
-            The keys are:
+            The keys optionally are:
                 - "processed_data": The path to the processed data file.
                 - "train_test_data": The path to the train/test data
                     directory.
@@ -32,15 +39,19 @@ class DataSaver:
         save_processed_data(
             df: pd.DataFrame, dir: str | Path, data_id: str
         ) -> Path:
-            Saves the processed data to a pickle file.
+            Saves the processed data to a pickle file in
+            <dir>/<data_id>/.
         save_train_test_data(
             X_train, Y_train, X_test, Y_test, dir: str
         ) -> str:
-            Saves the train/test splits to pickle files.
+            Saves the train/test splits to pickle files in
+            <dir>/<timestamp>/.
         save_model_and_config(
             model, model_name, timestamp, model_dir, config, config_dir
         ):
-            Saves the trained model and configuration settings.
+            Saves the trained model and configuration settings to files
+            in <models_dir>/<model_name>/ and
+            <configs_dir>/<model_name>/.
     """
 
     def __init__(self):
@@ -48,15 +59,30 @@ class DataSaver:
         self.saved_paths = {}
 
     def save_processed_data(
-        self, df: pd.DataFrame, dir: str | Path, data_id: str
+        self,
+        df: pd.DataFrame,
+        dir: str | Path = PROCESSED_DATA_DIR,
+        data_id: str = "ff-mw",
     ) -> Path:
         """
-        Saves the processed data to a pickle file.
+        Saves the processed data to a pickle file in <dir>/<data_id>/.
+
+        This method optionally needs to be given the parent directory
+        path as <dir>, not the path to the lowest level directory. By
+        default, it uses PROCESSED_DATA_DIR imported from
+        config.py.
+
+        It automatically creates/uses the lowest level directory
+        appropriately and saves the file in the format:
+
+            <dir>/<data_id>/<timestamp>_processed_data_<hash>.pkl
 
         Args:
             df (pd.DataFrame): The processed DataFrame.
             dir (str | Path): The directory to save the processed data.
-            data_id (str): The ID of the processed data.
+                Defaults to PROCESSED_DATA_DIR == "data/processed/".
+            data_id (str | Path): The ID of the processed data. Defaults
+                to "ff-mw".
 
         Returns:
             Path: The path to the saved file.
@@ -64,11 +90,9 @@ class DataSaver:
         Raises:
             Exception: If there is an error saving the processed data.
         """
-        dir = Path(dir)
-        timestamp = datetime.now().strftime("%Y%m%d")
-        logger.info(f"Saving processed datasets to {dir}...\n")
+        processed_data_dir = Path(dir) / data_id
+        logger.info(f"Saving processed datasets to {processed_data_dir}...\n")
         try:
-            processed_data_dir = dir / f"processed/{data_id}"
             processed_data_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate a hash based on DataFrame metadata and sampling
@@ -80,6 +104,7 @@ class DataSaver:
             logger.debug("Data hashed.\n")
 
             # Construct the output file path
+            timestamp = datetime.now().strftime("%Y%m%d")
             processed_data_path = (
                 processed_data_dir
                 / f"{timestamp}_processed_data_{processed_data_hash}.pkl"
@@ -114,17 +139,31 @@ class DataSaver:
         Y_train: np.ndarray,
         X_test: np.ndarray,
         Y_test: np.ndarray,
-        dir: str | Path,
+        test_indices: np.ndarray,
+        dir: str | Path = RNN_INPUT_DATA_DIR,
     ) -> Path:
         """
-        Saves the train/test splits to pickle files.
+        Saves the train/test splits to pickle files in
+        <dir>/<timestamp>/.
+
+        This method optionally needs to be given the parent directory
+        path as <dir>, not the path to the lowest level directory. By
+        default, it uses RNN_INPUT_DATA_DIR imported from
+        config.py.
+
+        It automatically creates/uses the lowest level directory
+        appropriately and saves the files in the format:
+
+            <dir>/<timestamp>/<X/Y_train/test>.pkl
 
         Args:
             X_train (np.ndarray): The training data features.
             Y_train (np.ndarray): The training data labels.
             X_test (np.ndarray): The test data features.
             Y_test (np.ndarray): The test data labels.
-            dir (str): The directory to save the train/test data.
+            test_indices (np.ndarray): The indices of the test data.
+            dir (str | Path): The directory to save the train/test data.
+                Defaults to RNN_INPUT_DATA_DIR == "data/rnn_input/".
 
         Returns:
             Path: The path to the saved directory.
@@ -133,15 +172,14 @@ class DataSaver:
             Exception: If there is an error saving the train/test data.
         """
         timestamp = datetime.now().strftime("%Y%m%d")
-        dir = Path(dir)
+        train_test_data_dir = Path(dir) / timestamp
         logger.info(f"Saving train/test splits to {dir}...\n")
         try:
-            train_test_data_dir = dir / f"{timestamp}"
             train_test_data_dir.mkdir(parents=True, exist_ok=True)
 
             for data, name in zip(
-                [X_train, Y_train, X_test, Y_test],
-                ["X_train", "Y_train", "X_test", "Y_test"],
+                [X_train, Y_train, X_test, Y_test, test_indices],
+                ["X_train", "Y_train", "X_test", "Y_test", "test_indices"],
             ):
                 file_path = train_test_data_dir / f"{name}.pkl"
 
@@ -171,23 +209,34 @@ class DataSaver:
         self,
         model: torch.nn.Module,
         model_name: str,
-        model_dir: str | Path,
         config: Dict,
-        config_dir: str | Path,
+        models_dir: str | Path = MODELS_DIR,
+        configs_dir: str | Path = CONFIGS_DIR,
     ) -> None | Tuple[Path, Path]:
         """
-        Saves the trained model and configuration settings.
+        Saves the trained model and configuration settings to files in
+        <models_dir>/<model_name>/ and <configs_dir>/<model_name>/.
+
+        This method optionally needs to be given the parent directory
+        path as <models_dir> and <configs_dir>, not the path to the
+        lowest level directory. By default, it uses MODELS_DIR and
+        CONFIGS_DIR imported from config.py.
+
+        It automatically creates/uses the lowest level directory
+        appropriately and saves the files in the format:
+
+            <models_dir>/<model_name>/<timestamp>_model_<hash>.pt
+            <configs_dir>/<model_name>/<timestamp>_config_<hash>.yaml
 
         Args:
             model (torch.nn.Module): The trained RNN model.
             model_name (str): The name of the model.
-            timestamp (str): The timestamp to use in the output file
-                names.
-            model_dir (str | Path): The directory to save the trained
-                model.
+            timestamp (str): The timestamp to use in output file names.
             config (Dict): The configuration settings for the model.
-            config_dir (str | Path): The directory to save the
-                configuration settings.
+            models_dir (str | Path): Directory to save trained model.
+                Defaults to MODELS_DIR == "models/".
+            configs_dir (str | Path): Directory to save configuration.
+                Defaults to CONFIGS_DIR == "config/".
 
         Returns:
             Tuple[Path, Path]: The paths to the saved model and
@@ -197,7 +246,10 @@ class DataSaver:
             Exception: If there is an error saving the model/config.
         """
         timestamp = datetime.now().strftime("%Y%m%d")
-        model_dir, config_dir = Path(model_dir), Path(config_dir)
+        model_dir, config_dir = (
+            Path(models_dir) / model_name,
+            Path(configs_dir) / model_name,
+        )
         logger.info(
             f"Saving model & config to {model_dir} & {config_dir}...\n"
         )
