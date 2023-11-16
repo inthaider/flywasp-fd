@@ -53,7 +53,15 @@ class RNN(nn.Module):
             True.
     """
 
-    def __init__(self, input_size, hidden_size, output_size, batch_first=True):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        output_size,
+        num_layers,
+        nonlinearity="tanh",
+        batch_first=True,
+    ):
         """
         Initialize the RNN model.
 
@@ -78,7 +86,13 @@ class RNN(nn.Module):
 
         # Create an RNN layer with the specified input_size,
         #  hidden_size, and batch_first parameters
-        self.rnn = nn.RNN(input_size, hidden_size, batch_first=batch_first)
+        self.rnn = nn.RNN(
+            input_size,
+            hidden_size,
+            num_layers,
+            nonlinearity,
+            batch_first=batch_first,
+        )
 
         # Create a linear layer with the specified hidden_size and
         #  output_size parameters
@@ -182,9 +196,7 @@ def data_loaders(
     print(f"\n\n{device.type}")
     if device.type == "mps":
         print("Using kwargs for data loaders\n\n")
-    kwargs = (
-        kwargs if device.type == "mps" else {}
-    )
+    kwargs = kwargs if device.type == "mps" else {}
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
     train_loader = DataLoader(
@@ -198,11 +210,13 @@ def data_loaders(
 
 def configure_model(
     Y_train,
-    input_size,
-    hidden_size,
-    output_size,
+    input_size: int,
+    hidden_size: int,
+    output_size: int,
     learning_rate,
-    device,
+    num_hidden_layers: int,
+    nonlinearity,
+    device: str | torch.device = "cpu",
     batch_first=True,
 ):
     """
@@ -229,6 +243,8 @@ def configure_model(
         input_size=input_size,
         hidden_size=hidden_size,
         output_size=output_size,
+        num_layers=num_hidden_layers,
+        nonlinearity=nonlinearity,
         batch_first=batch_first,
     ).to(device)
 
