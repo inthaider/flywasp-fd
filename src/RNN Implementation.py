@@ -76,28 +76,39 @@ def create_sequences(data, sequence_length=5):
     return np.array(x), np.array(y)
 '''
 
-def create_sequences(data, sequence_length=5, start_index = 0):
-    n = len(data) - sequence_length
+def create_sequences(data, sequence_length=10, start_index=0, skip=0):
+    # Calculate the total number of sequences that can be made
+    if skip == 0:
+        n = len(data) - sequence_length
+    else:
+        n = len(data) - (sequence_length - 1) * (skip + 1) - 1
+
+    # Initialize the arrays for storing sequences and targets
     x = np.empty((n, sequence_length, data.shape[1]))
     y = np.empty(n)
     indices = np.empty(n, dtype=int)
-    
+
     valid_idx = 0
     for i in range(n):
-        sequence = data[i:i + sequence_length]
-        target = data[i + sequence_length, -1]
+        # Calculate the end index of the sequence considering the skip
+        end_i = i + (sequence_length - 1) * (skip + 1)
         
+        # Extract the sequence with the given skip
+        sequence = data[i:end_i + 1:skip + 1]
+        target = data[end_i + 1, -1]  # The target is the immediate next frame after the sequence
+
         # Check if there are any missing values in the sequence or target
         if not np.isnan(sequence).any() and not np.isnan(target):
             x[valid_idx] = sequence
             y[valid_idx] = target
-            indices[valid_idx] = start_index + i + sequence_length
+            indices[valid_idx] = start_index + end_i + 1
             valid_idx += 1
             
     # Trim the arrays to the size of valid sequences
     x = x[:valid_idx]
     y = y[:valid_idx]
     indices = indices[:valid_idx]
+    
     return x, y, indices
 
 X_train, Y_train = [], []
@@ -139,6 +150,8 @@ print(X_test.shape, Y_test.shape)
 #######################
 # Random Oversampling #
 #######################
+
+'''
 from imblearn.over_sampling import RandomOverSampler
 
 ros = RandomOverSampler(random_state=42)
@@ -172,6 +185,7 @@ for name, obj in data_objects:
         pickle.dump(obj, file)
 
 print("Data saved successfully!")
+'''
 
 ######################
 # RNN Implementation #
