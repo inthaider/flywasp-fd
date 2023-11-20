@@ -25,6 +25,7 @@ def create_writer(
     n_layers: int,
     hidden_units: int,
     lr,
+    seq_len: int,
     device: str | torch.device = "cpu",
     experiment_num: int = 0,
     model_name: str = "rnn",
@@ -36,6 +37,7 @@ def create_writer(
         n_layers (int): The number of RNN layers in the model.
         hidden_units (int): The number of hidden units in the model.
         lr (float): The learning rate.
+        seq_len (int): The sequence length of the input data.
         device (str | torch.device): The device used for training.
         experiment_num (int): The name of the experiment.
         model_name (str): The name of the model.
@@ -51,7 +53,7 @@ def create_writer(
             LOGS_DIR,
             "tb_runs",
             HOST_NAME,
-            f"{get_current_time()}_{model_name}_nhl{n_layers}_"
+            f"{get_current_time()}_{model_name}_lseq{seq_len}_nhl{n_layers}_"
             + f"nhu{hidden_units}_lr{lr}_{device}",
         )
 
