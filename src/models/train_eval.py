@@ -24,7 +24,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import auc, f1_score, precision_recall_curve
-from torchinfo import summary
+
 from tqdm.auto import tqdm
 
 from src.models.helpers_rnn import (
@@ -32,7 +32,6 @@ from src.models.helpers_rnn import (
     debug_input_nan_inf,
     debug_sumsq_grad_param,
 )
-from src.models.rnn_model import configure_model, data_loaders
 
 logger = logging.getLogger(__name__)
 writer = None
@@ -41,23 +40,23 @@ writer = None
 # ******************************************************************** #
 #               HIGHER LEVEL TRAINING+EVALUATION FUNCTION              #
 # ******************************************************************** #
-def train_eval_model(
-    X_train,
-    Y_train,
-    X_test,
-    Y_test,
-    input_size,
-    hidden_size,
-    output_size,
-    num_hidden_layers,
-    learning_rate,
-    nonlinearity,
-    batch_size,
-    num_epochs,
+def train_eval(
+    model: torch.nn.Module,
+    train_loader: torch.utils.data.DataLoader,
+    test_loader: torch.utils.data.DataLoader,
+    criterion: torch.nn.modules.loss._Loss,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.CosineAnnealingLR,
+    input_size: int,
+    hidden_size: int,
+    num_hidden_layers: int,
+    learning_rate: float,
+    nonlinearity: str,
+    batch_size: int,
+    num_epochs: int,
+    seq_len: int,
     device: str | torch.device = "cpu",
-    batch_first=True,
     prints_per_epoch=10,
-    **kwargs,
 ):
     """
     Trains the RNN model and evaluates it on a test dataset.
@@ -73,62 +72,18 @@ def train_eval_model(
     TODO: Utilize helpers_rnn.timeSince(since) function to track time.
     TODO:
     """
-    # **************************************************************** #
-    #                           CONFIGURATION                          #
-    # **************************************************************** #
-    # The num_workers parameter determines the number of subprocesses
-    # to use for data loading. When num_workers > 0, multiple worker
-    # processes are used. If num_workers = 0, then the data will be
-    # loaded in the main process.
-    # The pin_memory parameter allows you to set the value of the
-    # pin_memory flag for the DataLoader. If pin_memory = True, the
-    # data loader will copy Tensors into GPU pinned memory before
-    # returning them.
-    train_loader, test_loader = data_loaders(
-        X_train, Y_train, X_test, Y_test, batch_size, device, **kwargs
-    )  # Create the data loaders
-    (
-        model,
-        criterion,
-        optimizer,
-        scheduler,
-        cross_entropy_weights,
-    ) = configure_model(
-        Y_train,
-        input_size,
-        hidden_size,
-        output_size,
-        learning_rate,
-        num_hidden_layers,
-        nonlinearity,
-        device=device,
-        batch_first=batch_first,
-    )  # Define the model, loss function, and optimizer
-    # ====================== Print model summary ===================== #
-    logger.info("\n\nModel Summary:")
-    model.eval()  # Switch to evaluation mode for summary
     print(
-        summary(
-            model,
-            input_size=(batch_size, X_train.shape[1], X_train.shape[2]),
-            device=device,
-        )
+        f"\nTraining RNN Model ({device})...\n==============================\n"
     )
-    # ======== Tensorboard logging & hyperparameters to track ======== #
+    # ====================== Tensorboard logging ===================== #
     global writer
     writer = create_writer(
-        num_hidden_layers, hidden_size, learning_rate, device=device
+        num_hidden_layers,
+        hidden_size,
+        learning_rate,
+        seq_len=seq_len,
+        device=device,
     )  # Tensorboard log
-    hparams = {
-        "input_size": input_size,
-        "hidden_units": hidden_size,
-        "num_hidden_layers": num_hidden_layers,
-        "learning_rate": learning_rate,
-        "nonlinearity": nonlinearity,
-        "batch_size": batch_size,
-        "num_epochs": num_epochs,
-        "device": device,
-    }  # Define the hyperparameters to track
     (
         train_acc,
         test_acc,
@@ -145,7 +100,7 @@ def train_eval_model(
         None,
         None,
         None,
-    )  # Declare metrics to track with hyperparams
+    )  # Declare metrics to track
     # **************************************************************** #
     #                   TRAIN AND EVALUATE THE MODEL                   #
     # **************************************************************** #
@@ -226,13 +181,13 @@ def train_eval_model(
             epoch,
         )
         # ------------------------------------------------------------ #
-        logger.info("Training Data Distribution:")
         logger.info(
-            pd.Series(test_labels_and_probs[0]).value_counts().to_dict()
+            "Training Data Distribution: "
+            f"{pd.Series(test_labels_and_probs[0]).value_counts().to_dict()}"
         )
-        logger.info("Predicted Data Distribution:")
         logger.info(
-            pd.Series(test_labels_and_probs[1]).value_counts().to_dict()
+            "Predicted Data Distribution: "
+            f"{pd.Series(test_labels_and_probs[1]).value_counts().to_dict()}"
         )
         # ------------------------------------------------------------ #
         logger.info(
@@ -253,6 +208,17 @@ def train_eval_model(
         f"The entire train+eval code took {elapsed_time} minutes to run.\n\n"
     )
     # =========== Hyperparameter tracking with TensorBoard =========== #
+    hparams = {
+        "seq_len": seq_len,
+        "input_size": input_size,
+        "hidden_units": hidden_size,
+        "num_hidden_layers": num_hidden_layers,
+        "learning_rate": learning_rate,
+        "nonlinearity": nonlinearity,
+        "batch_size": batch_size,
+        "num_epochs": num_epochs,
+        "device": str(device),
+    }  # Define the hyperparameters to track
     hparam_metrics = {
         "hparam/Accuracy/train": train_acc,
         "hparam/Accuracy/test": test_acc,
@@ -268,6 +234,11 @@ def train_eval_model(
     writer.flush()
     writer.close()  # Close the SummaryWriter
     return model, test_labels_and_probs  # type: ignore
+
+
+# -------------------------------------------------------------------- #
+# -------------------------------------------------------------------- #
+# -------------------------------------------------------------------- #
 
 
 # ******************************************************************** #
