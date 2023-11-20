@@ -6,6 +6,7 @@ data/external/*
 data/interim/*
 data/processed/*
 data/raw/*
+data/*
 
 **/__pycache__/
 __pycache__/
