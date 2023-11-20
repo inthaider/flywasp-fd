@@ -41,14 +41,38 @@
 
 # # Adding the label
 # # create new variable 'start_walk'
-# df['start_walk'] = ((df['walk_backwards'] == 1) & (df['walk_backwards'].shift(1) == 0)).astype(int)
+# df["start_walk"] = (
+#     (df["walk_backwards"] == 1) & (df["walk_backwards"].shift(1) == 0)
+# ).astype(int)
 
 # # Only keeping in the relevant variables
 
-# df = df[['Frame', 'Fdis', 'FdisF', 'FdisL', 'Wdis', 'WdisF',
-#        'WdisL', 'Fangle', 'Wangle', 'F2Wdis', 'F2Wdis_rate', 'F2Wangle',
-#        'W2Fangle', 'ANTdis', 'F2W_blob_dis', 'bp_F_delta',
-#        'bp_W_delta', 'ap_F_delta', 'ap_W_delta', 'ant_W_delta', 'file', 'start_walk']]
+# df = df[
+#     [
+#         "Frame",
+#         "Fdis",
+#         "FdisF",
+#         "FdisL",
+#         "Wdis",
+#         "WdisF",
+#         "WdisL",
+#         "Fangle",
+#         "Wangle",
+#         "F2Wdis",
+#         "F2Wdis_rate",
+#         "F2Wangle",
+#         "W2Fangle",
+#         "ANTdis",
+#         "F2W_blob_dis",
+#         "bp_F_delta",
+#         "bp_W_delta",
+#         "ap_F_delta",
+#         "ap_W_delta",
+#         "ant_W_delta",
+#         "file",
+#         "start_walk",
+#     ]
+# ]
 
 # #################
 # # Preprocessing #
@@ -64,14 +88,14 @@
 #     for i in range(len(data) - sequence_length):
 #         sequence = data.iloc[i:i+sequence_length]
 #         target = data.iloc[i+sequence_length]['start_walk']
-        
+
 #         # Check if there are any missing values in the sequence or target
 #         if sequence.isnull().values.any() or pd.isnull(target):
 #             continue
-        
+
 #         x.append(sequence.values)
 #         y.append(target)
-    
+
 #     return np.array(x), np.array(y)
 # '''
 
@@ -80,19 +104,19 @@
 #     x = np.empty((n, sequence_length, data.shape[1]))
 #     y = np.empty(n)
 #     indices = np.empty(n, dtype=int)
-    
+
 #     valid_idx = 0
 #     for i in range(n):
 #         sequence = data[i:i + sequence_length]
 #         target = data[i + sequence_length, -1]
-        
+
 #         # Check if there are any missing values in the sequence or target
 #         if not np.isnan(sequence).any() and not np.isnan(target):
 #             x[valid_idx] = sequence
 #             y[valid_idx] = target
 #             indices[valid_idx] = start_index + i + sequence_length
 #             valid_idx += 1
-            
+
 #     # Trim the arrays to the size of valid sequences
 #     x = x[:valid_idx]
 #     y = y[:valid_idx]
@@ -108,22 +132,22 @@
 #     print(i, file)
 #     file_df = df[df['file'] == file]
 #     file_data = file_df.drop(['Frame', 'file'], axis=1).values
-    
+
 #     # Create sequences for each file
 #     x, y, idx = create_sequences(file_data, start_index=file_df.index.min())
-    
+
 #     # Calculate the split index
 #     train_size = int(len(x) * 2/3)
-    
+
 #     # Split the sequences for each file
 #     X_train.extend(x[:train_size])
 #     Y_train.extend(y[:train_size])
 #     X_test.extend(x[train_size:])
 #     Y_test.extend(y[train_size:])
-    
+
 #     # Extract the test indices corresponding to Y_test
 #     test_indices.extend(idx[train_size:])
-    
+
 
 # X_train = np.array(X_train)
 # X_train = X_train[:, :, :-1]
@@ -160,9 +184,9 @@
 #     os.makedirs(directory)
 
 # # List of objects and their names
-# data_objects = [('X_train', X_train), 
-#                 ('X_test', X_test), 
-#                 ('y_train', Y_train), 
+# data_objects = [('X_train', X_train),
+#                 ('X_test', X_test),
+#                 ('y_train', Y_train),
 #                 ('y_test', Y_test)]
 
 # # Save each object
@@ -196,15 +220,15 @@
 #     def forward(self, x):
 #         h0 = torch.zeros(1, x.size(0), self.hidden_size)
 #         out, _ = self.rnn(x, h0)
-        
+
 #         test_rnn_output.append(out.shape)
-        
+
 #         out = self.fc(out[:, -1, :])
-        
+
 #         test_nnl_output.append(out.shape)
-        
+
 #         return out
-    
+
 # # Define the dataset class
 # class WalkDataset(Dataset):
 #     def __init__(self, X, Y):
@@ -216,8 +240,7 @@
 
 #     def __getitem__(self, idx):
 #         return self.X[idx], self.Y[idx]
-    
-    
+
 
 # # Define the training function
 # def train(model, train_loader, criterion, optimizer, device):
@@ -253,22 +276,22 @@
 #             _, predicted = torch.max(outputs.data, 1)
 #             total += labels.size(0)
 #             correct += (predicted == labels).sum().item()
-            
+
 #             #print(outputs.data, torch.max(outputs.data,1))
-            
+
 #             probabilities = F.softmax(outputs, dim=1)
 #             prob_of_class_1 = probabilities[:, 1]
-            
+
 #             all_preds.extend(predicted.cpu().numpy())
 #             all_labels.extend(labels.cpu().numpy())
 #             all_preds_probs.extend(prob_of_class_1.cpu().numpy())
-            
+
 #     f1 = f1_score(all_labels, all_preds)
 #     prec, rec, _ = precision_recall_curve(all_labels, all_preds_probs)
 #     pr_auc = auc(rec, prec)
 #     print("Training Data Distribution:")
 #     print(pd.Series(all_labels).value_counts().to_dict())
-    
+
 #     print("Predicted Data Distribution:")
 #     print(pd.Series(all_preds).value_counts().to_dict())
 #     return running_loss / len(val_loader), correct / total, f1, pr_auc
@@ -323,15 +346,14 @@
 #         _, predicted = torch.max(outputs.data, 1)
 #         #total += labels.size(0)
 #         #correct += (predicted == labels).sum().item()
-        
+
 #         #print(outputs.data, torch.max(outputs.data,1))
-        
-        
-        
+
+
 #         probabilities = F.softmax(outputs, dim=1)
 #         prob_of_class_1 = probabilities[:, 1]
 #         #print(prob_of_class_1)
-        
+
 #         all_preds.extend(predicted.cpu().numpy())
 #         all_labels.extend(labels.cpu().numpy())
 #         all_preds_probs.extend(prob_of_class_1.cpu().numpy())
@@ -410,14 +432,4 @@
 # plt.show()  # Display the plot)
 
 
-
 # ### Debugging
-
-
-
-
-
-
-
-
-
