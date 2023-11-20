@@ -13,18 +13,8 @@ Classes:
     WalkDataset: A class representing the dataset.
 
 Functions:
-    init_param_weights(m): Initializes the weights of the model
-        parameters.
-    data_loaders(X_train, Y_train, X_test, Y_test, batch_size): Loads
-        the training and testing data into PyTorch DataLoader objects.
-    _init_cross_entropy_weights(Y_train): Initializes the weights for
-        the CrossEntropyLoss function.
-    loss_function(Y_train): Returns the CrossEntropyLoss function with
-        weights.
-    configure_model(
-        Y_train, input_size, hidden_size, output_size,
-        learning_rate, device, batch_first=True
-    ): Configures an RNN model for training.
+
+TODO: Update docstrings
 """
 
 import logging
@@ -36,6 +26,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader, Dataset
+import numpy as np
+from torchinfo import summary
+
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +164,101 @@ class WalkDataset(Dataset):
         return self.X[idx], self.Y[idx]
 
 
+# ******************************************************************** #
+#                      HIGHER LEVEL SETUP FUNCTION                     #
+# ******************************************************************** #
+def setup_train_env(
+    X_train: np.ndarray,
+    Y_train: np.ndarray,
+    X_test: np.ndarray,
+    Y_test: np.ndarray,
+    input_size: int,
+    hidden_size: int,
+    output_size: int,
+    num_hidden_layers: int,
+    learning_rate: float,
+    nonlinearity: str,
+    batch_size: int,
+    device: str | torch.device = "cpu",
+    batch_first: bool = True,
+    sv: int = 2,
+    **kwargs,
+):
+    """
+    Sets up the environment for training and evaluating an RNN model.
+
+    Args:
+        X_train (np.ndarray): The training data.
+        Y_train (np.ndarray): The training labels.
+        X_test (np.ndarray): The test data.
+        Y_test (np.ndarray): The test labels.
+        input_size (int): Number of expected features in the input 'x'.
+        hidden_size (int): Number of features in the hidden state 'h'.
+        output_size (int): Number of features in the output 'y'.
+        num_hidden_layers (int): The number of hidden layers.
+        learning_rate (float): The learning rate.
+        nonlinearity (str): The nonlinearity to use. Can be 'tanh' or
+            'relu'.
+        batch_size (int): The batch size.
+        device (str | torch.device, optional): GPU or CPU to use for
+            processing. Defaults to "cpu".
+        batch_first (bool, optional): If True, then input/output tensors
+            are provided as (batch, seq, feature). Defaults to True.
+        sv (int, optional): The verbosity level for the torchinfo
+            summary. Defaults to 2.
+        **kwargs: Additional keyword arguments for data_loaders().
+
+    Returns:
+        Tuple[torch.nn.Module, torch.utils.data.DataLoader,
+            torch.utils.data.DataLoader, torch.nn.modules.loss._Loss,
+            torch.optim.Optimizer, torch.optim.lr_scheduler._LRScheduler,
+            torch.Tensor]: The RNN model, training data loader, test data
+            loader, loss function, optimizer, learning rate scheduler,
+            and cross entropy weights.
+    """
+    # ==================== Create the data loaders =================== #
+    train_loader, test_loader = data_loaders(
+        X_train, Y_train, X_test, Y_test, batch_size, device, **kwargs
+    )
+    # ====================== Configure the model ===================== #
+    (
+        model,
+        criterion,
+        optimizer,
+        scheduler,
+        cross_entropy_weights,
+    ) = configure_model(
+        Y_train,
+        input_size,
+        hidden_size,
+        output_size,
+        learning_rate,
+        num_hidden_layers,
+        nonlinearity,
+        device=device,
+        batch_first=batch_first,
+    )
+    # ====================== Print model summary ===================== #
+    logger.info("Model Summary (torchinfo): ")
+    model.eval()  # Switch to evaluation mode for summary
+    summary(
+        model,
+        input_size=(batch_size, X_train.shape[1], X_train.shape[2]),
+        device=device,
+        verbose=sv,
+    )
+    return (
+        model,
+        train_loader,
+        test_loader,
+        criterion,
+        optimizer,
+        scheduler,
+        cross_entropy_weights,
+        summary,
+    )
+
+
 def data_loaders(
     X_train, Y_train, X_test, Y_test, batch_size, device, **kwargs
 ):
@@ -190,9 +278,10 @@ def data_loaders(
         tuple: A tuple containing the training data loader and the
             testing data loader.
     """
-    print(f"\n\n{device.type}")
     if device.type == "mps":
-        print("Using kwargs for data loaders\n\n")
+        print(f"Device is {device} -- Using num_workers="
+              f"{kwargs['num_workers']} & pin_memory="
+              f"{kwargs['pin_memory']}.\n")
     kwargs = kwargs if device.type == "mps" else {}
     train_dataset = WalkDataset(X_train, Y_train)
     test_dataset = WalkDataset(X_test, Y_test)
