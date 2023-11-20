@@ -6,7 +6,13 @@ data/external/*
 data/interim/*
 data/processed/*
 data/raw/*
+data/rnn_input/*
 data/*
+
+notebooks/data/*
+
+src_misc/
+src_misc/*
 
 **/__pycache__/
 __pycache__/
@@ -14,4 +20,10 @@ __pycache__/
 
 */.DS_Store
 **/.DS_Store
+
+.vscode/
 .vscode/settings.json
+
+
+references/notes.md
+src/models/train_eval.py

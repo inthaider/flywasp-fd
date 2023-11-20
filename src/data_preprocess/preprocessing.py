@@ -1,388 +1,355 @@
-import hashlib
+"""
+This module contains the `DataPreprocessor` class for preprocessing a
+Pandas DataFrame.
+
+Classes:
+    DataPreprocessor:
+        A class for preprocessing a Pandas DataFrame. It includes
+        methods for dropping columns, rearranging columns, calculating
+        means, adding labels, handling infinite and NaN values, and
+        performing other preprocessing steps.
+
+Example:
+    To preprocess a dataset using the DataPreprocessor class:
+
+    >>> preprocessor = DataPreprocessor(df)
+    >>> df_raw = preprocessor.get_preprocessed_data()
+
+Note:
+    This module expects the raw data to be in a Pandas DataFrame format
+    and to be available at the specified pickle path.
+"""
+
 import logging
-from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 
+from src.data_preprocess.data_loader import DataLoader
+
 logger = logging.getLogger(__name__)
+
 
 class DataPreprocessor:
     """
-    A class for preprocessing a Pandas DataFrame.
+    Class for preprocessing Pandas DataFrame containing our raw data.
 
-    Parameters
-    ----------
-    df : pandas.DataFrame, optional
-        The DataFrame to preprocess.
-    pickle_path : str, optional
-        The path to a pickled DataFrame to load.
-    raw_data_id : str, optional
-        The name/ID of the raw data.
-    save_data : bool, optional
-        Whether to save the processed data to a pickled file. Defaults to False.
+    Attributes:
+        raw_data_id (str): The ID of the raw data.
+        data_type (str): The type of data at the path. Should be either
+            "raw" or "processed".
+        df_raw (pd.DataFrame): The raw DataFrame.
+        df (pd.DataFrame): The processed DataFrame.
+        data_loader (DataLoader): The DataLoader object for loading raw
+            or processed data.
 
-    Attributes
-    ----------
-    df : pandas.DataFrame
-        The DataFrame to preprocess. Defaults to None.
-    pickle_path : str
-        The path to a pickled DataFrame to load. Defaults to None.
-    raw_data_id : str
-        The name/ID of the raw data. Defaults to "ff-mw".
-    save_data : bool
-        Whether to save the processed data to a pickled file. Defaults to False.
-    raw_data_path : str
-        The path to the raw data. Defaults to None.
-    interim_data_path : str
-        The path to the interim data. Defaults to pickle_path.
-    processed_data_path : str
-        The path to the processed data. Defaults to None.
-    timestamp : str
-        The timestamp of the current time in the format YYYYMMDD_HHMM.
-
-    Methods
-    -------
-    load_data()
-        Loads the DataFrame from a pickled file.
-    save_processed_data()
-        Saves the processed data to a pickled file.
-    drop_columns(columns_to_drop)
-        Drops the specified columns from the DataFrame.
-    specific_rearrange(col_to_move, ref_col)
-        Moves a column to be immediately after a reference column.
-    rearrange_columns(cols_order)
-        Rearranges the columns of the DataFrame according to the specified order.
-    calculate_means(column_pairs, new_columns)
-        Calculates the means of pairs of columns and adds the results as new columns.
-    add_labels(condition_columns, new_column)
-        Adds a new column based on conditions of existing columns.
-    handle_infinity_and_na()
-        Replaces infinite and NaN values in the DataFrame with NaN.
-    preprocess_data()
-        Performs preprocessing steps on the DataFrame.
+    Methods:
+        set_data_source(data_type: str, data_path: str | Path): Sets the
+            data source for DataPreprocessor.
+        get_preprocessed_data() -> pd.DataFrame: High-level method to
+            orchestrate preprocessing steps on the DataFrame.
+        drop_columns(columns_to_drop: list[str]): Drops the specified
+            columns from the DataFrame.
+        calculate_means(
+            column_pairs: list[list[str]], new_columns: list[str]
+        ): Calculates the means of pairs of columns and adds the
+            results as new columns.
+        add_labels(condition_columns: list[str], new_column: str): Adds
+            a new column based on conditions of existing columns.
+        handle_infinity_and_na(): Replaces infinite and NaN values in
+            the DataFrame with forward/backward filled values.
+        specific_rearrange(col_to_move: str, ref_col: str): Moves a
+            column to be immediately after a reference column.
+        rearrange_columns(cols_order: list[str]): Rearranges the columns
+            of the DataFrame according to the specified order.
     """
 
-    def __init__(self, df=None, pickle_path=None, raw_data_id: str = "ff-mw", save_data: bool = False):
+    def __init__(
+        self,
+        raw_data_id: str = "ff-mw",
+    ):
         """
-        Initializes a new instance of the DataPreprocessor class.
-
-        Parameters
-        ----------
-        df : pandas.DataFrame, optional
-            The DataFrame to preprocess.
-        pickle_path : str, optional
-            The path to a pickled DataFrame to load.
-        raw_data_id : str, optional
-            The name/ID of the raw data.
-        save_data : bool, optional
-            Whether to save the processed data to a pickled file. Defaults to False.
+        Initializes DataPreprocessor with the given DataFrame.
         """
-        self.df = df
-        self.pickle_path = pickle_path
         self.raw_data_id = raw_data_id
-        self.save_data = save_data
+        self.data_type: Optional[str] = None
+        self.df_raw: Optional[pd.DataFrame] = None
+        self.df: Optional[pd.DataFrame] = None
+        self.data_loader = DataLoader()
+        # self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-        self.raw_data_path = None
-        self.interim_data_path = self.pickle_path
-        self.processed_data_path = None
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-
-    def load_data(self):
+    def set_data_source(
+        self,
+        data_type: str,
+        data_path: str | Path,
+    ):
         """
-        Loads the DataFrame from a pickled file.
+        Sets the data source for DataPreprocessor.
 
-        Returns
-        -------
-        pandas.DataFrame
-            The loaded DataFrame.
+        Takes the path to either the raw data or an existing processed
+        data pickle file.
+
+        Args:
+            data_type (str): The type of data at the path. Should be
+                either "raw" or "processed".
+            data_path (str | Path): The path to the data.
+
+        Raises:
+            ValueError: If data_type is not "raw" or "processed".
         """
-        # Logging statement to indicate the start of loading data
-        logger.info("\nLoading data in DataPreprocessor -> load_data() ...")
-        try:
-            if self.pickle_path:
-                logger.info(f"Loading data from {self.pickle_path}...")
-                self.df = pd.read_pickle(self.pickle_path)
-                logger.info(f"Data loaded from {self.pickle_path}.")
-                return self.df
-            else:
-                raise ValueError(
-                    "\nVALUE ERROR: Provide a valid pickle path.\n")
-        except Exception as e:
-            logger.error(f"\nERROR loading data: {e}\n")
-            raise
-
-    def save_processed_data(self) -> str:
-        """
-        Saves the processed data to a pickled file.
-
-        Returns
-        -------
-        str
-            The path to the saved pickled file.
-        """
-        # Logging statement to indicate the start of saving processed data
-        logger.info(
-            "\nSaving processed data in DataPreprocessor -> save_processed_data() ...")
-        try:
-            # Create the directory for the processed data if it doesn't exist
-            processed_data_dir = Path(f"data/processed/{self.raw_data_id}")
-            processed_data_dir.mkdir(parents=True, exist_ok=True)
-
-            #
-            # Generate a hash based on DataFrame metadata and some sampling
-            #
-            logger.info("Generating hash for processed data...")
-            # Extracting the shape, columns and a sample of the dataframe
-            df_summary = f"{self.df.shape}{self.df.columns}{self.df.sample(n=10, random_state=1)}"
-            # Generating the hash using the md5 algorithm based on the dataframe summary
-            processed_data_hash = hashlib.md5(df_summary.encode()).hexdigest()
-            logger.info("Processed data hashed.")
-
-            # Construct the output file path
-            self.processed_data_path = processed_data_dir / \
-                f"{self.timestamp}_processed_data_{processed_data_hash}.pkl"
-
-            # Save the processed data to the output file
+        self.data_type = data_type
+        logger.info("Setting the data source for DataPreprocessor...\n")
+        if data_type == "raw":
+            logger.info("Loading raw DataFrame from file...\n")
+            self.df_raw = self.data_loader.load_raw_data(data_path)
+            self.df = self.df_raw.copy()
             logger.info(
-                f"Saving processed data to {self.processed_data_path}...")
-            self.df.to_pickle(self.processed_data_path)
+                "Raw DataFrame loaded from file and set as data_source.\nUse "
+                "get_processed_data() to preprocess raw data and retrieve the "
+                "processed DataFrame.\n"
+            )
+        elif data_type == "processed":
+            self.df = self.data_loader.load_processed_data(data_path)
             logger.info(
-                f"Processed data saved to {self.processed_data_path}.\n")
-            return str(self.processed_data_path)
-        except Exception as e:
-            logger.error(f"\nERROR saving processed data: {e}\n")
-            raise
+                "Processed DataFrame loaded from file as data_source.\nUse "
+                "get_processed_data() to retrieve the loaded processed "
+                "DataFrame.\n"
+            )
+        else:
+            raise ValueError(
+                "ValueError: data_type must be either 'raw' or 'processed'.\n"
+            )
+        return self
 
-    def drop_columns(self, columns_to_drop):
+    def get_preprocessed_data(self) -> pd.DataFrame:
+        """
+        Performs preprocessing steps on the DataFrame if the data source
+        is raw. Returns the processed DataFrame if the data source is
+        processed.
+
+        Returns:
+            pd.DataFrame: The processed DataFrame.
+
+        Raises:
+            ValueError: If the data source has not been set.
+        """
+        if self.df is None:
+            raise ValueError(
+                "ValueError: data_source is None. Please set the data source "
+                "using set_data_source() before calling get_rnn_data()."
+            )
+        if self.data_type == "raw":
+            logger.info("Preprocessing data...\n")
+            # Drop the 'plot' column
+            self._drop_columns(["plot"])
+            # Calculate the mean of 'ANTdis_1' and 'ANTdis_2' and store it
+            # in a new column 'ANTdis'
+            self._calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])
+            # Add a new column 'start_walk' with value 'walk_backwards' for
+            # rows where the 'walk_backwards' column has value
+            self._add_labels(
+                ["walk_backwards", "walk_backwards"], "start_walk"
+            )
+            # Replace infinity and NaN values with appropriate values
+            self._handle_infinity_and_na()
+            # Rearrange the column names
+            self._specific_rearrange("F2Wdis_rate", "F2Wdis")
+            self._rearrange_columns(
+                [
+                    "Frame",
+                    "Fdis",
+                    "FdisF",
+                    "FdisL",
+                    "Wdis",
+                    "WdisF",
+                    "WdisL",
+                    "Fangle",
+                    "Wangle",
+                    "F2Wdis",
+                    "F2Wdis_rate",
+                    "F2Wangle",
+                    "W2Fangle",
+                    "ANTdis",
+                    "F2W_blob_dis",
+                    "bp_F_delta",
+                    "bp_W_delta",
+                    "ap_F_delta",
+                    "ap_W_delta",
+                    "ant_W_delta",
+                    "file",
+                    "start_walk",
+                ]
+            )
+            # Print the shape of the dataframe and its columns
+            print(f"Shape of the DataFrame: {self.df.shape}")
+            print(f"Columns of the DataFrame: {self.df.columns}\n")
+            logger.info("Preprocessing complete.\n\n")
+            return self.df
+        else:
+            logger.info("Returning processed DataFrame.\n")
+            return self.df
+
+    def _drop_columns(self, columns_to_drop: list[str]):
         """
         Drops the specified columns from the DataFrame.
 
-        Parameters
-        ----------
-        columns_to_drop : list of str
-            The names of the columns to drop.
+        Args:
+            columns_to_drop (list of str): The names of the columns to
+                drop.
+
+        Raises:
+            Exception: If an error occurs while dropping columns.
         """
-        # Logging statement to indicate the start of dropping columns
-        logger.info(
-            f"\nDropping columns {columns_to_drop} in DataPreprocessor -> drop_columns() ...")
+        assert isinstance(self.df, pd.DataFrame), "df must be a DataFrame."
+        logger.debug(f"Dropping columns {columns_to_drop}...\n")
         try:
             self.df.drop(columns_to_drop, axis=1, inplace=True)
-            # Logging statement to indicate the end of dropping columns
-            logger.info(
-                f"Columns dropped successfully.\n")
+            logger.debug("Columns dropped successfully.\n")
+            return self
         except Exception as e:
-            logger.error(f"\nERROR dropping columns: {e}\n")
+            logger.error(f"ERROR dropping columns: {e}\n")
             raise
 
-    def specific_rearrange(self, col_to_move, ref_col):
+    def _calculate_means(
+        self, column_pairs: list[list[str]], new_columns: list[str]
+    ):
         """
-        Moves a column to be immediately after a reference column.
+        Calculates the means of pairs of columns and adds the results as
+        new columns.
 
-        Parameters
-        ----------
-        col_to_move : str
-            The name of the column to move.
-        ref_col : str
-            The name of the reference column.
-        """
-        # Logging statement to indicate the start of moving a column
-        logger.info(
-            f"\nRearranging specific columns in DataPreprocessor -> specific_rearrange() ...")
-        try:
-            logger.info(
-                f"Moving column {col_to_move} to be immediately after {ref_col}...")
-            cols = self.df.columns.tolist()
-            cols.insert(cols.index(ref_col) + 1,
-                        cols.pop(cols.index(col_to_move)))
-            self.df = self.df[cols]
-            # Logging statement to indicate the end of moving a column
-            logger.info(
-                f"Column moved successfully.\n")
-        except Exception as e:
-            logger.error(f"\nERROR moving column: {e}\n")
-            raise
+        Args:
+            column_pairs (list of list of str): The pairs of columns to
+                calculate the means of.
+            new_columns (list of str): The names of the new columns.
 
-    def rearrange_columns(self, cols_order):
+        Raises:
+            Exception: If an error occurs while calculating means.
         """
-        Rearranges the columns of the DataFrame according to the specified order.
-
-        Parameters
-        ----------
-        cols_order : list of str
-            The desired order of the columns.
-        """
-        # Logging statement to indicate the start of rearranging columns
-        logger.info(
-            f"\nRearranging columns in DataPreprocessor -> rearrange_columns() ...")
-        try:
-            logger.info(f"Rearranging columns to {cols_order}...")
-            self.df = self.df[cols_order]
-            # Logging statement to indicate the end of rearranging columns
-            logger.info(
-                f"Columns rearranged successfully.\n")
-        except Exception as e:
-            logger.error(f"\nERROR rearranging columns: {e}\n")
-            raise
-
-    def calculate_means(self, column_pairs, new_columns):
-        """
-        Calculates the means of pairs of columns and adds the results as new columns.
-
-        Parameters
-        ----------
-        column_pairs : list of list of str
-            The pairs of column names to calculate the means of.
-        new_columns : list of str
-            The names of the new columns to add.
-        """
-        # Logging statement to indicate the start of calculating means
-        logger.info(
-            f"\nCalculating means in DataPreprocessor -> calculate_means() ...")
+        assert isinstance(self.df, pd.DataFrame), "df must be a DataFrame."
+        logger.debug("Calculating means...")
         try:
             for pair, new_col in zip(column_pairs, new_columns):
-                logger.info(
-                    f"Calculating mean of columns {pair} and adding as {new_col}...")
+                logger.debug(
+                    f"Calculating mean of columns {pair} and adding as "
+                    f"{new_col}..."
+                )
                 self.df[new_col] = self.df[pair].mean(axis=1)
-
-            # Logging statement to indicate the end of calculating means
-            logger.info(
-                f"Means calculated successfully.\n")
+            logger.debug("Means calculated successfully.\n")
+            return self
         except Exception as e:
-            logger.error(f"\nERROR calculating means: {e}\n")
+            logger.error(f"ERROR calculating means: {e}\n")
             raise
 
-    def add_labels(self, condition_columns, new_column):
+    def _add_labels(self, condition_columns: list[str], new_column: str):
         """
         Adds a new column based on conditions of existing columns.
 
-        Parameters
-        ----------
-        condition_columns : list of str
-            The names of the columns to use as conditions.
-        new_column : str
-            The name of the new column to add.
-        """
-        # Logging statement to indicate the start of adding labels
-        logger.info(
-            f"\nAdding labels in DataPreprocessor -> add_labels() ...")
-        try:
-            logger.info(
-                f"Adding new column {new_column} based on conditions of columns {condition_columns}...")
-            self.df[new_column] = ((self.df[condition_columns[0]] == 1) & (
-                self.df[condition_columns[1]].shift(1) == 0)).astype(int)
+        Args:
+            condition_columns (list of str): The names of the columns to
+                use for the conditions.
+            new_column (str): The name of the new column.
 
-            # Logging statement to indicate the end of adding labels
-            logger.info(
-                f"Labels added successfully.\n")
+        Raises:
+            Exception: If an error occurs while adding labels.
+        """
+        assert isinstance(self.df, pd.DataFrame), "df must be a DataFrame."
+        logger.debug("Adding labels...")
+        try:
+            logger.debug(
+                f"Adding new column {new_column} based on conditions of "
+                "columns {condition_columns}..."
+            )
+            self.df[new_column] = (
+                (self.df[condition_columns[0]] == 1)
+                & (self.df[condition_columns[1]].shift(1) == 0)
+            ).astype(int)
+            logger.debug("Labels added successfully.\n")
+            return self
         except Exception as e:
-            logger.error(f"\nERROR adding labels: {e}\n")
+            logger.error(f"ERROR adding labels: {e}\n")
             raise
 
-    def handle_infinity_and_na(self):
+    def _handle_infinity_and_na(self):
         """
-        Replaces infinite and NaN values in the DataFrame with forward/backward filled values.
+        Replaces infinite and NaN values in the DataFrame with
+        forward/backward filled values.
+
+        Raises:
+            Exception: If an error occurs while handling infinite and
+                NaN values.
 
         TODO: Do we need the df.reset_index(drop=True) line?
         TODO: Implement forward and backward filling.
         """
+        assert isinstance(self.df, pd.DataFrame), "df must be a DataFrame."
         try:
-            logger.info("Handling infinite and NaN values...")
-
+            logger.debug("Handling infinite and NaN values...")
             # Replace infinite values with NaN
             self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
-
-            # df.reset_index(drop=True) resets the index of the dataframe to the default index (0, 1, 2, ...)
-            # we do this because the index of the dataframe is not continuous after dropping rows
+            # df.reset_index(drop=True) resets the index of the
+            # dataframe to the default index (0, 1, 2, ...) we do this
+            # because the index of the dataframe is not continuous after
+            # dropping rows
             self.df = self.df.reset_index(drop=True)
-
             # # Forward fill NaN values
             # self.df.fillna(method='ffill', inplace=True)
-
             # # Backward fill any remaining NaN values
             # self.df.fillna(method='bfill', inplace=True)
-
+            logger.debug("Infinite and NaN values handled successfully.\n")
+            return self
         except Exception as e:
-            logger.error(f"\nERROR handling infinite and NaN values: {e}\n")
+            logger.error(f"ERROR handling infinite and NaN values: {e}\n")
             raise
 
-    def preprocess_data(self, save_data: bool = None):
+    def _specific_rearrange(self, col_to_move: str, ref_col: str):
         """
-        Performs preprocessing steps on the DataFrame.
+        Moves a column to be immediately after a reference column.
 
-        Parameters
-        ----------
-        save_data : bool, optional
-            Whether to save the processed data to a pickled file. Defaults to None, in which case the value of self.save_data is used.
+        Args:
+            col_to_move (str): The name of the column to move.
+            ref_col (str): The name of the reference column.
 
-        Returns
-        -------
-        pandas.DataFrame
-            The preprocessed DataFrame.
+        Raises:
+            Exception: If an error occurs while moving a column.
         """
-        # Add logging statements to indicate the start of preprocessing as part of the DataPreprocessor class
-        logger.info("\n\nPreprocessing data (in DataPreprocessor class)...")
+        assert isinstance(self.df, pd.DataFrame), "df must be a DataFrame."
+        logger.debug("Rearranging specific columns...\n")
+        try:
+            logger.debug(
+                f"Moving column {col_to_move} to be immediately after "
+                f"{ref_col}..."
+            )
+            cols = self.df.columns.tolist()
+            cols.insert(
+                cols.index(ref_col) + 1, cols.pop(cols.index(col_to_move))
+            )
+            self.df = self.df[cols]
+            logger.debug("Column moved successfully.\n")
+            return self
+        except Exception as e:
+            logger.error(f"ERROR moving column: {e}\n")
+            raise
 
-        # Set the value of self.save_data to the value of save_data if save_data is not None
-        if save_data is not None:
-            self.save_data = save_data
+    def _rearrange_columns(self, cols_order: list[str]):
+        """
+        Rearranges the columns of the DataFrame according to the
+        specified order.
 
-        # Drop the 'plot' column
-        self.drop_columns(["plot"])
+        Args:
+            cols_order (list of str): The order of the columns.
 
-        # Calculate the mean of 'ANTdis_1' and 'ANTdis_2' and store it in a new column 'ANTdis'
-        self.calculate_means([["ANTdis_1", "ANTdis_2"]], ["ANTdis"])
-
-        # Add a new column 'start_walk' with value 'walk_backwards' for rows where the 'walk_backwards' column has value 'walk_backwards'
-        self.add_labels(["walk_backwards", "walk_backwards"], "start_walk")
-
-        # Replace infinity and NaN values with appropriate values
-        self.handle_infinity_and_na()
-
-        # Rearrange the column names
-        self.specific_rearrange(
-            "F2Wdis_rate", "F2Wdis"
-        )
-        self.rearrange_columns(
-            [
-                "Frame",
-                "Fdis",
-                "FdisF",
-                "FdisL",
-                "Wdis",
-                "WdisF",
-                "WdisL",
-                "Fangle",
-                "Wangle",
-                "F2Wdis",
-                "F2Wdis_rate",
-                "F2Wangle",
-                "W2Fangle",
-                "ANTdis",
-                "F2W_blob_dis",
-                "bp_F_delta",
-                "bp_W_delta",
-                "ap_F_delta",
-                "ap_W_delta",
-                "ant_W_delta",
-                "file",
-                "start_walk",
-            ]
-        )
-
-        # Save the processed data to a pickled file if self.save_data is True.
-        if self.save_data:
-            logger.info(
-                "!! save_data is True !!")
-            self.save_processed_data()
-
-        # Print the shape of the dataframe and its columns using the print module.
-        print(
-            f"\nDataPreprocessor.preprocess_data --> Shape of the dataframe: {self.df.shape}")
-        print(
-            f"DataPreprocessor.preprocess_data --> Columns of the dataframe: {self.df.columns}\n")
-
-        # Add logging statements to indicate the end of preprocessing as part of the DataPreprocessor class
-        logger.info("Preprocessing complete (in DataPreprocessor class).\n\n")
-        return self.df
+        Raises:
+            Exception: If an error occurs while rearranging columns.
+        """
+        assert isinstance(self.df, pd.DataFrame), "df must be a DataFrame."
+        logger.debug("Rearranging columns...\n")
+        try:
+            logger.debug(f"Rearranging columns to {cols_order}...")
+            self.df = self.df[cols_order]
+            logger.debug("Columns rearranged successfully.\n")
+            return self
+        except Exception as e:
+            logger.error(f"ERROR rearranging columns: {e}\n")
+            raise

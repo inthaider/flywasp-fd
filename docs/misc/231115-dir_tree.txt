@@ -1,0 +1,124 @@
+.
+├── README.md
+├── __init__.py
+├── __pycache__
+│   └── config.cpython-311.pyc
+├── assets
+│   └── DALL·E 2023-10-16 17.37.46 - Photo of a solid color background with two abstract human figures. The figure on the left has elements related to physics, cosmology, and ML with the .png
+├── config
+├── config.py
+├── data
+│   ├── external
+│   ├── interim
+│   │   ├── ff-mw-df_raw_var_dscr.txt
+│   │   └── ff-mw.pkl
+│   ├── processed
+│   │   ├── df_pp_var_dscr.txt
+│   │   └── ff-mw
+│   ├── raw
+│   └── rnn_input
+│       ├── 20231027
+│       └── fd_v0
+├── docs
+│   ├── index.html
+│   ├── misc
+│   │   ├── 231102-dir_tree.txt
+│   │   ├── 231109-dir_tree.txt
+│   │   ├── 231115-dir_tree.txt
+│   │   ├── OG_dir_tree.txt
+│   │   ├── onboarding_raw.md
+│   │   └── project_structure.md
+│   ├── search.js
+│   ├── src
+│   │   ├── RNN_Implementation.html
+│   │   ├── data_preprocess
+│   │   │   ├── feature_engineering.html
+│   │   │   ├── preprocessing.html
+│   │   │   └── rnn_data_prep.html
+│   │   ├── data_preprocess.html
+│   │   ├── main.html
+│   │   ├── models
+│   │   │   ├── baseline_models.html
+│   │   │   ├── helpers_rnn.html
+│   │   │   ├── rnn_model.html
+│   │   │   └── train_eval.html
+│   │   ├── models.html
+│   │   ├── utils
+│   │   │   └── utilities.html
+│   │   └── utils.html
+│   ├── src.html
+│   └── templates
+│       └── module.html.jinja2
+├── models
+├── notebooks
+│   ├── 1.0-jh-initial-data-exploration.ipynb
+│   ├── 2.0-jh-initial-rnn-exploration.ipynb
+│   └── 3.0-jh-initial-rnn-exploration.ipynb
+├── references
+│   ├── FD_RNN_Implementation_writeup.txt
+│   ├── RNN Implementation.txt
+│   ├── RNN_Implementation.py
+│   └── notes.md
+├── reports
+├── requirements.txt
+├── setup.py
+├── src
+│   ├── RNN_Implementation.py
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── RNN Implementation.cpython-311.pyc
+│   │   ├── RNN_Implementation.cpython-311.pyc
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── gen_pdocs.cpython-311.pyc
+│   │   └── main.cpython-311.pyc
+│   ├── data_preprocess
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── data_loader.cpython-311.pyc
+│   │   │   ├── data_saver.cpython-311.pyc
+│   │   │   ├── feature_engineering.cpython-311.pyc
+│   │   │   ├── prep_rnn_input.cpython-311.pyc
+│   │   │   ├── preprocessing.cpython-311.pyc
+│   │   │   └── rnn_data_prep.cpython-311.pyc
+│   │   ├── data_loader.py
+│   │   ├── data_saver.py
+│   │   ├── feature_engineering.py
+│   │   ├── preprocessing.py
+│   │   └── rnn_data_prep.py
+│   ├── main.py
+│   ├── misc
+│   │   ├── 1.0_fd_rnn_initial_exploration.py
+│   │   ├── 2.0_fd_rnn_exploration.py
+│   │   ├── 3.0_fd_rnn_implementation.py
+│   │   ├── main_v0.py
+│   │   ├── misc_utilities.py
+│   │   └── test.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── baseline_models.cpython-311.pyc
+│   │   │   ├── helpers_rnn.cpython-311.pyc
+│   │   │   ├── rnn_model.cpython-311.pyc
+│   │   │   └── train_eval.cpython-311.pyc
+│   │   ├── baseline_models.py
+│   │   ├── helpers_rnn.py
+│   │   ├── old
+│   │   │   └── rnn_model_v0.py
+│   │   ├── rnn_model.py
+│   │   └── train_eval.py
+│   ├── utils
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   └── utilities.cpython-311.pyc
+│   │   └── utilities.py
+│   └── visualization
+│       ├── __pycache__
+│       │   └── rnn_visualize.cpython-311.pyc
+│       └── rnn_visualize.py
+└── src_misc
+    └── rnn_data_prep_old.py
+
+37 directories, 85 files

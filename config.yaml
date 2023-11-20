@@ -1,0 +1,24 @@
+data_dir_paths:
+  interim: data/interim
+  processed: data/processed
+  raw: data/raw
+  rnn_input: data/rnn_input
+data_file_paths:
+  model: null
+  model_config: null
+  processed: /Users/JawanHaider/Documents/Projects/Collaborative/Dogar/flywasp-fd/data/processed/ff-mw/20231115_processed_data_0ead4953ec32fad25a38982f3e492f1b.pkl
+  raw: null
+  rnn_input: null
+  rnn_input_dir: /Users/JawanHaider/Documents/Projects/Collaborative/Dogar/flywasp-fd/data/rnn_input/20231115
+logging:
+  log_level: DEBUG
+model_params:
+  batch_size: 32
+  learning_rate: 0.001
+processing_options:
+  is_load_train_test_data: false
+  is_save_model_and_config: false
+  is_save_processed: true
+  is_save_train_test: true
+  use_processed_data: false
+project_root: .
